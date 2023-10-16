@@ -3,16 +3,10 @@
 # @Date:   2017-06-14 17:34:32
 # @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
 # @Last Modified time: 2019-01-25 20:25:59
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 from .alphabet import Alphabet
 from .functions import *
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle as pickle
+import pickle as pickle
 
 
 START = "</s>"

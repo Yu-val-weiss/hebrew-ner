@@ -3,8 +3,6 @@
 # @Date:   2017-06-15 14:23:06
 # @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
 # @Last Modified time: 2019-02-14 12:23:52
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 import numpy as np
 
