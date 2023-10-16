@@ -8,8 +8,6 @@
 """
     convert NER/Chunking tag schemes, i.e. BIO->BIOES, BIOES->BIO, IOB->BIO, IOB->BIOES
 """
-from __future__ import print_function
-
 import sys
 
 

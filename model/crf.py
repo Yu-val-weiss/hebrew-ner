@@ -3,7 +3,6 @@
 # @Date:   2017-12-04 23:19:38
 # @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
 # @Last Modified time: 2018-12-16 22:15:56
-from __future__ import print_function
 import torch
 import torch.autograd as autograd
 import torch.nn as nn
