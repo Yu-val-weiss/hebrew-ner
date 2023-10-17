@@ -14,6 +14,7 @@
 
 - There **MUST** be two whitespace characters at the end
 - The MA step returns it as `{"ma_lattice" : ""}`
+- Go version must be 1.15
 
 ### Rebuilding
 
