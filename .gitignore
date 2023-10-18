@@ -160,5 +160,6 @@ cython_debug/
 #.idea/
 
 scratch/
+fasttext/
 
 .DS_STORE
