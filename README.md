@@ -27,3 +27,44 @@ docker compose build --no-cache
 ```zsh
 docker compose up
 ```
+
+## FastText Embeddings
+
+Bin allows for outoftext words to be predicted
+
+### Download bin using Python
+
+```Py
+import fasttext.util
+fasttext.util.download_model('he', if_exists='ignore')
+```
+
+```zsh
+mkdir -p fasttext && sudo mv cc.* fasttext/
+```
+
+### Load from bin
+
+```Python
+import fasttext
+import fasttext.util
+
+ft = fasttext.load_model('fasttext/cc.he.300.bin')
+ft.get_dimension() # 300
+fasttext.util.reduce_model(ft, 100)
+ft.get_dimension() # 100
+embed = ft.get_word_vector('שלום')
+```
+
+### Load from text
+
+```Py
+def load_vectors(fname):
+    fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
+    n, d = map(int, fin.readline().split())
+    data = {}
+    for line in fin:
+        tokens = line.rstrip().split(' ')
+        data[tokens[0]] = map(float, tokens[1:])
+    return data
+```
