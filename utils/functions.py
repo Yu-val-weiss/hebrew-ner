@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 # @Author: Jie
 # @Date:   2017-06-15 14:23:06
-# @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
-# @Last Modified time: 2019-02-14 12:23:52
+# @Last Modified by: Yuval Weiss
+# @Last Modified time: 2023-10-22 19:10:11
 import sys
 import numpy as np
+import fasttext
+import fasttext.util
 
 def normalize_word(word):
     new_word = ""
@@ -157,10 +159,10 @@ def read_instance(input_file, word_alphabet, char_alphabet, feature_alphabets, l
     return instence_texts, instence_Ids
 
 
-def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm=True, use_fasttext=False):
+def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm=True):
     embedd_dict = dict()
     if embedding_path != None:
-        embedd_dict, embedd_dim = load_pretrain_emb(embedding_path) # No need to load, can use fasttext one
+        embedd_dict, embedd_dim = load_pretrain_emb(embedding_path) 
     alphabet_size = word_alphabet.size()
     scale = np.sqrt(3.0 / embedd_dim)
     pretrain_emb = np.empty([word_alphabet.size(), embedd_dim])
@@ -172,7 +174,7 @@ def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm
             if norm:
                 pretrain_emb[index,:] = norm2one(embedd_dict[word])
             else:
-                pretrain_emb[index,:] = embedd_dict[word] # TODO: here can do the lookup from fasttext
+                pretrain_emb[index,:] = embedd_dict[word] 
             perfect_match += 1
         elif word.lower() in embedd_dict:
             if norm:
@@ -185,6 +187,22 @@ def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm
             not_match += 1
     pretrained_size = len(embedd_dict)
     print("Embedding:\n     pretrain word:%s, prefect match:%s, case_match:%s, oov:%s, oov%%:%s"%(pretrained_size, perfect_match, case_match, not_match, (not_match+0.)/alphabet_size))
+    return pretrain_emb, embedd_dim
+
+
+def build_pretrain_embedding_fasttext(embedding_path, word_alphabet, embedd_dim=100, norm=True):
+    if embedding_path != None:
+        ft = fasttext.load_model(embedding_path)
+        if ft.get_dimension() != embedd_dim:
+            fasttext.util.reduce_model(ft, embedd_dim)
+            
+    pretrain_emb = np.empty([word_alphabet.size(), embedd_dim])
+    for word, index in word_alphabet.iteritems():
+        if norm:
+            pretrain_emb[index,:] = norm2one(ft.get_word_vector(word))
+        else:
+            pretrain_emb[index,:] = ft.get_word_vector(word)
+    print("Embedding:\n     used fastText model so OOV words are actually evaluated, not random")
     return pretrain_emb, embedd_dim
 
 def norm2one(vec):
