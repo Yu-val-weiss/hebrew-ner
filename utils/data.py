@@ -43,7 +43,7 @@ class Data:
 
         self.decode_dir = None
         self.dset_dir = None ## data vocabulary related file
-        self.model_dir = None ## model save  file
+        self.model_dir = None ## model save file
         self.load_model_dir = None ## model load file
 
         self.word_emb_dir = None
