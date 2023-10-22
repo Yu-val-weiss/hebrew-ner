@@ -163,3 +163,4 @@ scratch/
 fasttext/
 
 .DS_STORE
+.vscode/
