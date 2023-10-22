@@ -157,10 +157,10 @@ def read_instance(input_file, word_alphabet, char_alphabet, feature_alphabets, l
     return instence_texts, instence_Ids
 
 
-def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm=True):
+def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm=True, use_fasttext=False):
     embedd_dict = dict()
     if embedding_path != None:
-        embedd_dict, embedd_dim = load_pretrain_emb(embedding_path)
+        embedd_dict, embedd_dim = load_pretrain_emb(embedding_path) # No need to load, can use fasttext one
     alphabet_size = word_alphabet.size()
     scale = np.sqrt(3.0 / embedd_dim)
     pretrain_emb = np.empty([word_alphabet.size(), embedd_dim])
@@ -172,7 +172,7 @@ def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm
             if norm:
                 pretrain_emb[index,:] = norm2one(embedd_dict[word])
             else:
-                pretrain_emb[index,:] = embedd_dict[word]
+                pretrain_emb[index,:] = embedd_dict[word] # TODO: here can do the lookup from fasttext
             perfect_match += 1
         elif word.lower() in embedd_dict:
             if norm:
