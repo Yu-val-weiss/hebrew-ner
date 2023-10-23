@@ -28,6 +28,33 @@ docker compose build --no-cache
 docker compose up
 ```
 
+### To use Colab
+
+First do:
+
+```sh
+ngrok http 8000 --basic-auth 'user:pass' 
+```
+
+```Python
+import requests
+from requests.auth import HTTPBasicAuth
+
+url = NGROKURL
+json_data = {"amb_lattice": "...."}
+username = "user"
+password = "pass"
+
+response = requests.get(url, json=json_data, auth=HTTPBasicAuth(username, password))
+
+if response.status_code == 200:
+    # Request was successful, and the response is stored in 'response.text'
+    print("Response:")
+    print(response.json())
+else:
+    print(f"Request failed with status code: {response.status_code}")
+```
+
 ## FastText Embeddings
 
 Bin allows for outoftext words to be predicted
