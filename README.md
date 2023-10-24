@@ -33,8 +33,10 @@ docker compose up
 First do:
 
 ```sh
-ngrok http 8000 --basic-auth 'user:pass' 
+ngrok start yap 
 ```
+
+Note: password is on google colab and in `/Users/yuval/.config/ngrok/ngrok.yml`
 
 ```Python
 import requests
