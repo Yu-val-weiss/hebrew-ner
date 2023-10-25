@@ -7,13 +7,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+
+from utils.data import Data
 from .wordrep import WordRep
 
 class WordSequence(nn.Module):
-    def __init__(self, data):
+    def __init__(self, data: Data):
         super(WordSequence, self).__init__()
         print("build word sequence feature extractor: %s..."%(data.word_feature_extractor))
         self.gpu = data.HP_gpu
+        self.metal = data.HP_metal
         self.use_char = data.use_char
         # self.batch_size = data.HP_batch_size
         # self.hidden_dim = data.HP_hidden_dim
@@ -69,6 +72,18 @@ class WordSequence(nn.Module):
                     self.cnn_batchnorm_list[idx] = self.cnn_batchnorm_list[idx].cuda()
             else:
                 self.lstm = self.lstm.cuda()
+        
+        if self.metal:
+            self.droplstm = self.droplstm.to(data.mps_device)
+            self.hidden2tag = self.hidden2tag.to(data.mps_device)
+            if self.word_feature_extractor == "CNN":
+                self.word2cnn = self.word2cnn.to(data.mps_device)
+                for idx in range(self.cnn_layer):
+                    self.cnn_list[idx] = self.cnn_list[idx].to(data.mps_device)
+                    self.cnn_drop_list[idx] = self.cnn_drop_list[idx].to(data.mps_device)
+                    self.cnn_batchnorm_list[idx] = self.cnn_batchnorm_list[idx].to(data.mps_device)
+            else:
+                self.lstm = self.lstm.to(data.mps_device)
 
 
     def forward(self, word_inputs, feature_inputs, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover):

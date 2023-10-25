@@ -7,11 +7,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from utils.data import Data
 from .wordsequence import WordSequence
 from .crf import CRF
 
 class SeqLabel(nn.Module):
-    def __init__(self, data):
+    def __init__(self, data: Data):
         super(SeqLabel, self).__init__()
         self.use_crf = data.use_crf
         print("build sequence labeling network...")
@@ -22,13 +24,14 @@ class SeqLabel(nn.Module):
         print("use crf: ", self.use_crf)
 
         self.gpu = data.HP_gpu
+        self.metal = data.HP_metal
         self.average_batch = data.average_batch_loss
         ## add two more label for downlayer lstm, use original label size for CRF
         label_size = data.label_alphabet_size
         data.label_alphabet_size += 2
         self.word_hidden = WordSequence(data)
         if self.use_crf:
-            self.crf = CRF(label_size, self.gpu)
+            self.crf = CRF(label_size, self.gpu, self.metal)
 
 
     def calculate_loss(self, word_inputs, feature_inputs, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover, batch_label, mask):

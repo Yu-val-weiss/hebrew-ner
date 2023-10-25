@@ -9,10 +9,11 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
 
 class CharBiGRU(nn.Module):
-    def __init__(self, alphabet_size, pretrain_char_embedding, embedding_dim, hidden_dim, dropout, gpu, bidirect_flag = True):
+    def __init__(self, alphabet_size, pretrain_char_embedding, embedding_dim, hidden_dim, dropout, gpu, metal, bidirect_flag = True):
         super(CharBiGRU, self).__init__()
         print("build char sequence feature extractor: GRU ...")
         self.gpu = gpu
+        self.metal = metal
         self.hidden_dim = hidden_dim
         if bidirect_flag:
             self.hidden_dim = hidden_dim // 2
@@ -27,6 +28,10 @@ class CharBiGRU(nn.Module):
             self.char_drop = self.char_drop.cuda()
             self.char_embeddings = self.char_embeddings.cuda()
             self.char_lstm = self.char_lstm.cuda()
+        if self.metal:
+            self.char_drop = self.char_drop.to(mps := torch.device("mps"))
+            self.char_embeddings = self.char_embeddings.to(mps)
+            self.char_lstm = self.char_lstm.to(mps)
 
 
     def random_embedding(self, vocab_size, embedding_dim):
