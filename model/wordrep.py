@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Jie Yang
 # @Date:   2017-10-17 16:47:32
-# @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
-# @Last Modified time: 2019-02-01 15:52:01
+# @Last Modified by: Yuval Weiss
+# @Last Modified time: 2023-10-25 15:56:27
 import torch
 import torch.nn as nn
 import numpy as np
@@ -65,10 +65,10 @@ class WordRep(nn.Module):
                 self.feature_embeddings[idx] = self.feature_embeddings[idx].cuda()
         
         if self.metal:
-            self.drop = self.drop.to(data.mps_device)
-            self.word_embedding = self.word_embedding.to(data.mps_device)
+            self.drop = self.drop.to(mps := torch.device("mps"))
+            self.word_embedding = self.word_embedding.to(mps)
             for idx in range(self.feature_num):
-                self.feature_embeddings[idx] = self.feature_embeddings[idx].to(data.mps_device)
+                self.feature_embeddings[idx] = self.feature_embeddings[idx].to(mps)
 
 
     def random_embedding(self, vocab_size, embedding_dim):

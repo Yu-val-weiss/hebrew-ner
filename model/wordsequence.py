@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Jie Yang
 # @Date:   2017-10-17 16:47:32
-# @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
-# @Last Modified time: 2019-02-01 15:59:26
+# @Last Modified by: Yuval Weiss
+# @Last Modified time: 2023-10-25 15:56:27
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -74,16 +74,16 @@ class WordSequence(nn.Module):
                 self.lstm = self.lstm.cuda()
         
         if self.metal:
-            self.droplstm = self.droplstm.to(data.mps_device)
-            self.hidden2tag = self.hidden2tag.to(data.mps_device)
+            self.droplstm = self.droplstm.to(mps := torch.device('mps'))
+            self.hidden2tag = self.hidden2tag.to(mps)
             if self.word_feature_extractor == "CNN":
-                self.word2cnn = self.word2cnn.to(data.mps_device)
+                self.word2cnn = self.word2cnn.to(mps)
                 for idx in range(self.cnn_layer):
-                    self.cnn_list[idx] = self.cnn_list[idx].to(data.mps_device)
-                    self.cnn_drop_list[idx] = self.cnn_drop_list[idx].to(data.mps_device)
-                    self.cnn_batchnorm_list[idx] = self.cnn_batchnorm_list[idx].to(data.mps_device)
+                    self.cnn_list[idx] = self.cnn_list[idx].to(mps)
+                    self.cnn_drop_list[idx] = self.cnn_drop_list[idx].to(mps)
+                    self.cnn_batchnorm_list[idx] = self.cnn_batchnorm_list[idx].to(mps)
             else:
-                self.lstm = self.lstm.to(data.mps_device)
+                self.lstm = self.lstm.to(mps)
 
 
     def forward(self, word_inputs, feature_inputs, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover):
