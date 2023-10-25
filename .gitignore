@@ -161,6 +161,7 @@ cython_debug/
 
 scratch/
 fasttext/
+trained_models/
 
 .DS_STORE
 .vscode/
