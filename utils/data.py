@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Jie
 # @Date:   2017-06-14 17:34:32
-# @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
-# @Last Modified time: 2019-01-25 20:25:59
+# @Last Modified by: Yuval Weiss
+# @Last Modified time: 2023-10-22 19:10:11
 import sys
 from .alphabet import Alphabet
 from .functions import *
@@ -63,6 +63,7 @@ class Data:
         self.pretrain_word_embedding = None
         self.pretrain_char_embedding = None
         self.pretrain_feature_embeddings = []
+        self.use_fasttext = False # new line
 
         self.label_size = 0
         self.word_alphabet_size = 0
@@ -120,6 +121,7 @@ class Data:
         print("     Char  alphabet size: %s"%(self.char_alphabet_size))
         print("     Label alphabet size: %s"%(self.label_alphabet_size))
         print("     Word embedding  dir: %s"%(self.word_emb_dir))
+        print("     Use        fasttext: %s"%(self.use_fasttext))
         print("     Char embedding  dir: %s"%(self.char_emb_dir))
         print("     Word embedding size: %s"%(self.word_emb_dim))
         print("     Char embedding size: %s"%(self.char_emb_dim))
@@ -277,8 +279,12 @@ class Data:
 
     def build_pretrain_emb(self):
         if self.word_emb_dir:
-            print("Load pretrained word embedding, norm: %s, dir: %s"%(self.norm_word_emb, self.word_emb_dir))
-            self.pretrain_word_embedding, self.word_emb_dim = build_pretrain_embedding(self.word_emb_dir, self.word_alphabet, self.word_emb_dim, self.norm_word_emb)
+            if self.use_fasttext:
+                print("Load fasttext model for embedding, norm: %s, dir: %s"%(self.norm_word_emb, self.word_emb_dir))
+                self.pretrain_word_embedding, self.word_emb_dim = build_pretrain_embedding_fasttext(self.word_emb_dir, self.word_alphabet, self.word_emb_dim, self.norm_word_emb)
+            else:
+                print("Load pretrained word embedding, norm: %s, dir: %s"%(self.norm_word_emb, self.word_emb_dir))
+                self.pretrain_word_embedding, self.word_emb_dim = build_pretrain_embedding(self.word_emb_dir, self.word_alphabet, self.word_emb_dim, self.norm_word_emb)
         if self.char_emb_dir:
             print("Load pretrained char embedding, norm: %s, dir: %s"%(self.norm_char_emb, self.char_emb_dir))
             self.pretrain_char_embedding, self.char_emb_dim = build_pretrain_embedding(self.char_emb_dir, self.char_alphabet, self.char_emb_dim, self.norm_char_emb)
@@ -415,6 +421,9 @@ class Data:
         the_item = 'word_emb_dir'
         if the_item in config:
             self.word_emb_dir = config[the_item]
+        the_item = 'use_fasttext'
+        if the_item in config:
+            self.use_fasttext = config[the_item]
         the_item = 'char_emb_dir'
         if the_item in config:
             self.char_emb_dir = config[the_item]
