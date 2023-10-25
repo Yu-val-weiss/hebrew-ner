@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Jie
 # @Date:   2017-06-15 14:11:08
-# @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
-# @Last Modified time: 2019-02-13 12:41:44
+# @Last Modified by: Yuval Weiss
+# @Last Modified time: 2023-10-25 15:56:27
 import time
 import sys
 import argparse
@@ -367,15 +367,21 @@ def batchify_sentence_classification_with_label(input_batch_list, gpu, metal, if
 
 
 
-def train(data):
+def train(data: Data):
     print("Training model...")
     data.show_data_summary()
     save_data_name = data.model_dir +".dset"
     data.save(save_data_name)
     if data.sentence_classification:
-        model = SentClassifier(data)
+        if data.HP_metal:
+            model = SentClassifier(data).to(torch.device("mps"))
+        else: 
+            model = SentClassifier(data)
     else:
-        model = SeqLabel(data)
+        if data.HP_metal:
+            model = SeqLabel(data).to(torch.device("mps"))
+        else:
+            model = SeqLabel(data)
 
     if data.optimizer.lower() == "sgd":
         optimizer = optim.SGD(model.parameters(), lr=data.HP_lr, momentum=data.HP_momentum,weight_decay=data.HP_l2)

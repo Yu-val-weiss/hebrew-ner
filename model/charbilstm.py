@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Jie Yang
 # @Date:   2017-10-17 16:47:32
-# @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
-# @Last Modified time: 2018-10-18 11:19:37
+# @Last Modified by: Yuval Weiss
+# @Last Modified time: 2023-10-25 15:56:27
 import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
@@ -13,6 +13,7 @@ class CharBiLSTM(nn.Module):
         super(CharBiLSTM, self).__init__()
         print("build char sequence feature extractor: LSTM ...")
         self.gpu = gpu
+        self.metal = metal
         self.hidden_dim = hidden_dim
         if bidirect_flag:
             self.hidden_dim = hidden_dim // 2
