@@ -159,7 +159,7 @@ def evaluate(data, model, name, nbest=None):
         instance = instances[start:end]
         if not instance:
             continue
-        batch_word, batch_features, batch_wordlen, batch_wordrecover, batch_char, batch_charlen, batch_charrecover, batch_label, mask  = batchify_with_label(instance, data.HP_gpu, False, data.sentence_classification)
+        batch_word, batch_features, batch_wordlen, batch_wordrecover, batch_char, batch_charlen, batch_charrecover, batch_label, mask  = batchify_with_label(instance, data.HP_gpu, data.HP_metal, False, data.sentence_classification)
         if nbest and not data.sentence_classification:
             scores, nbest_tag_seq = model.decode_nbest(batch_word,batch_features, batch_wordlen, batch_char, batch_charlen, batch_charrecover, mask, nbest)
             nbest_pred_result = recover_nbest_label(nbest_tag_seq, mask, data.label_alphabet, batch_wordrecover)
@@ -181,14 +181,14 @@ def evaluate(data, model, name, nbest=None):
     return speed, acc, p, r, f, pred_results, pred_scores
 
 
-def batchify_with_label(input_batch_list, gpu, if_train=True, sentence_classification=False):
+def batchify_with_label(input_batch_list, gpu, metal, if_train=True, sentence_classification=False):
     if sentence_classification:
-        return batchify_sentence_classification_with_label(input_batch_list, gpu, if_train)
+        return batchify_sentence_classification_with_label(input_batch_list, gpu, metal, if_train)
     else:
-        return batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train)
+        return batchify_sequence_labeling_with_label(input_batch_list, gpu, metal, if_train)
 
 
-def batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train=True):
+def batchify_sequence_labeling_with_label(input_batch_list, gpu, metal, if_train=True):
     """
         input: list of words, chars and labels, various length. [[words, features, chars, labels],[words, features, chars,labels],...]
             words: word ids for one sentence. (batch_size, sent_len)
@@ -263,10 +263,20 @@ def batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train=True):
         char_seq_tensor = char_seq_tensor.cuda()
         char_seq_recover = char_seq_recover.cuda()
         mask = mask.cuda()
+    if metal:
+        word_seq_tensor = word_seq_tensor.to(mps := torch.device("mps"))
+        for idx in range(feature_num):
+            feature_seq_tensors[idx] = feature_seq_tensors[idx].to(mps)
+        word_seq_lengths = word_seq_lengths.to(mps)
+        word_seq_recover = word_seq_recover.to(mps)
+        label_seq_tensor = label_seq_tensor.to(mps)
+        char_seq_tensor = char_seq_tensor.to(mps)
+        char_seq_recover = char_seq_recover.to(mps)
+        mask = mask.to(mps)
     return word_seq_tensor,feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths, char_seq_recover, label_seq_tensor, mask
 
 
-def batchify_sentence_classification_with_label(input_batch_list, gpu, if_train=True):
+def batchify_sentence_classification_with_label(input_batch_list, gpu, metal, if_train=True):
     """
         input: list of words, chars and labels, various length. [[words, features, chars, labels],[words, features, chars,labels],...]
             words: word ids for one sentence. (batch_size, sent_len)
@@ -342,6 +352,16 @@ def batchify_sentence_classification_with_label(input_batch_list, gpu, if_train=
         char_seq_tensor = char_seq_tensor.cuda()
         char_seq_recover = char_seq_recover.cuda()
         mask = mask.cuda()
+    if metal:
+        word_seq_tensor = word_seq_tensor.to(mps := torch.device("mps"))
+        for idx in range(feature_num):
+            feature_seq_tensors[idx] = feature_seq_tensors[idx].to(mps)
+        word_seq_lengths = word_seq_lengths.to(mps)
+        word_seq_recover = word_seq_recover.to(mps)
+        label_seq_tensor = label_seq_tensor.to(mps)
+        char_seq_tensor = char_seq_tensor.to(mps)
+        char_seq_recover = char_seq_recover.to(mps)
+        mask = mask.to(mps)
     return word_seq_tensor,feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths, char_seq_recover, label_seq_tensor, mask
 
 
@@ -402,7 +422,7 @@ def train(data):
             instance = data.train_Ids[start:end]
             if not instance:
                 continue
-            batch_word, batch_features, batch_wordlen, batch_wordrecover, batch_char, batch_charlen, batch_charrecover, batch_label, mask  = batchify_with_label(instance, data.HP_gpu, True, data.sentence_classification)
+            batch_word, batch_features, batch_wordlen, batch_wordrecover, batch_char, batch_charlen, batch_charrecover, batch_label, mask  = batchify_with_label(instance, data.HP_gpu, data.HP_metal, True, data.sentence_classification)
             instance_count += 1
             loss, tag_seq = model.calculate_loss(batch_word, batch_features, batch_wordlen, batch_char, batch_charlen, batch_charrecover, batch_label, mask)
             right, whole = predict_check(tag_seq, batch_label, mask, data.sentence_classification)
@@ -467,7 +487,7 @@ def train(data):
         gc.collect()
 
 
-def load_model_decode(data, name):
+def load_model_decode(data: Data, name):
     print("Load Model from file: ", data.model_dir)
     if data.sentence_classification:
         model = SentClassifier(data)
@@ -518,6 +538,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data = Data()
     data.HP_gpu = torch.cuda.is_available()
+    data.HP_metal = torch.backends.mps.is_available()
     if args.config == 'None':
         data.train_dir = args.train 
         data.dev_dir = args.dev 

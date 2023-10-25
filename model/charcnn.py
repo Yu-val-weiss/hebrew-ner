@@ -9,10 +9,11 @@ import torch.nn.functional as F
 import numpy as np
 
 class CharCNN(nn.Module):
-    def __init__(self, alphabet_size, pretrain_char_embedding, embedding_dim, hidden_dim, dropout, gpu):
+    def __init__(self, alphabet_size, pretrain_char_embedding, embedding_dim, hidden_dim, dropout, gpu, metal):
         super(CharCNN, self).__init__()
         print("build char sequence feature extractor: CNN ...")
         self.gpu = gpu
+        self.metal = metal
         self.hidden_dim = hidden_dim
         self.char_drop = nn.Dropout(dropout)
         self.char_embeddings = nn.Embedding(alphabet_size, embedding_dim)
@@ -25,6 +26,10 @@ class CharCNN(nn.Module):
             self.char_drop = self.char_drop.cuda()
             self.char_embeddings = self.char_embeddings.cuda()
             self.char_cnn = self.char_cnn.cuda()
+        if self.metal:
+            self.char_drop = self.char_drop.to((mps_device := torch.device('mps')))
+            self.char_embeddings = self.char_embeddings.to(mps_device)
+            self.char_cnn = self.char_cnn.to(mps_device)
 
 
     def random_embedding(self, vocab_size, embedding_dim):

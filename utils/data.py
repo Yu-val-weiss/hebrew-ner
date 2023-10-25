@@ -97,6 +97,7 @@ class Data:
         self.HP_bilstm = True
 
         self.HP_gpu = False
+        self.HP_metal = False
         self.HP_lr = 0.015
         self.HP_lr_decay = 0.05
         self.HP_clip = None
@@ -173,6 +174,7 @@ class Data:
         print("     Hyper      lstm_layer: %s"%(self.HP_lstm_layer))
         print("     Hyper          bilstm: %s"%(self.HP_bilstm))
         print("     Hyper             GPU: %s"%(self.HP_gpu))
+        print("     Hyper             Metal: %s"%(self.HP_metal))
         print("DATA SUMMARY END.")
         print("++"*50)
         sys.stdout.flush()
@@ -522,6 +524,9 @@ class Data:
         the_item = 'gpu'
         if the_item in config:
             self.HP_gpu = str2bool(config[the_item])
+        the_item = 'metal'
+        if the_item in config:
+            self.HP_metal = str2bool(config[the_item])
         the_item = 'learning_rate'
         if the_item in config:
             self.HP_lr = float(config[the_item])

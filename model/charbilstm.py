@@ -9,7 +9,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
 
 class CharBiLSTM(nn.Module):
-    def __init__(self, alphabet_size, pretrain_char_embedding, embedding_dim, hidden_dim, dropout, gpu, bidirect_flag = True):
+    def __init__(self, alphabet_size, pretrain_char_embedding, embedding_dim, hidden_dim, dropout, gpu, metal, bidirect_flag = True):
         super(CharBiLSTM, self).__init__()
         print("build char sequence feature extractor: LSTM ...")
         self.gpu = gpu
@@ -27,6 +27,10 @@ class CharBiLSTM(nn.Module):
             self.char_drop = self.char_drop.cuda()
             self.char_embeddings = self.char_embeddings.cuda()
             self.char_lstm = self.char_lstm.cuda()
+        if self.metal:
+            self.char_drop = self.char_drop.to((mps_device := torch.device("mps")))
+            self.char_embeddings = self.char_embeddings.to(mps_device)
+            self.char_lstm = self.char_lstm.to(mps_device)
 
 
     def random_embedding(self, vocab_size, embedding_dim):

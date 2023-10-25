@@ -6,15 +6,18 @@
 import torch
 import torch.nn as nn
 import numpy as np
+
+from utils.data import Data
 from .charbilstm import CharBiLSTM
 from .charbigru import CharBiGRU
 from .charcnn import CharCNN
 
 class WordRep(nn.Module):
-    def __init__(self, data):
+    def __init__(self, data: Data):
         super(WordRep, self).__init__()
         print("build word representation...")
         self.gpu = data.HP_gpu
+        self.metal = data.HP_metal
         self.use_char = data.use_char
         self.batch_size = data.HP_batch_size
         self.char_hidden_dim = 0
@@ -24,15 +27,15 @@ class WordRep(nn.Module):
             self.char_hidden_dim = data.HP_char_hidden_dim
             self.char_embedding_dim = data.char_emb_dim
             if data.char_feature_extractor == "CNN":
-                self.char_feature = CharCNN(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu)
+                self.char_feature = CharCNN(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu, self.metal)
             elif data.char_feature_extractor == "LSTM":
-                self.char_feature = CharBiLSTM(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu)
+                self.char_feature = CharBiLSTM(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu, self.metal)
             elif data.char_feature_extractor == "GRU":
-                self.char_feature = CharBiGRU(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu)
+                self.char_feature = CharBiGRU(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu, self.metal)
             elif data.char_feature_extractor == "ALL":
                 self.char_all_feature = True
-                self.char_feature = CharCNN(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu)
-                self.char_feature_extra = CharBiLSTM(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu)
+                self.char_feature = CharCNN(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu, self.metal)
+                self.char_feature_extra = CharBiLSTM(data.char_alphabet.size(), data.pretrain_char_embedding, self.char_embedding_dim, self.char_hidden_dim, data.HP_dropout, self.gpu, self.metal)
             else:
                 print("Error char feature selection, please check parameter data.char_feature_extractor (CNN/LSTM/GRU/ALL).")
                 exit(0)
@@ -60,7 +63,12 @@ class WordRep(nn.Module):
             self.word_embedding = self.word_embedding.cuda()
             for idx in range(self.feature_num):
                 self.feature_embeddings[idx] = self.feature_embeddings[idx].cuda()
-
+        
+        if self.metal:
+            self.drop = self.drop.to(data.mps_device)
+            self.word_embedding = self.word_embedding.to(data.mps_device)
+            for idx in range(self.feature_num):
+                self.feature_embeddings[idx] = self.feature_embeddings[idx].to(data.mps_device)
 
 
     def random_embedding(self, vocab_size, embedding_dim):
