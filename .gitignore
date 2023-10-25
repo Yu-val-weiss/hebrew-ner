@@ -165,3 +165,4 @@ trained_models/
 
 .DS_STORE
 .vscode/
+metal_venv/
