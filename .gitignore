@@ -166,3 +166,5 @@ trained_models/
 
 .DS_STORE
 .vscode/
+*.tar.gz
+
