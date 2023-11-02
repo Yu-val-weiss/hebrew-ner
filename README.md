@@ -97,3 +97,22 @@ def load_vectors(fname):
         data[tokens[0]] = map(float, tokens[1:])
     return data
 ```
+
+## Moving data to HPC
+
+```zsh
+make xxx-archive
+make upload-xxx # where xxx can be code fasttext archive
+```
+
+Can clean with
+
+```zsh
+make clean
+```
+
+### Now on HPC
+
+```bash
+tar -xvf archive.tar.gz
+```
