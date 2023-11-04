@@ -168,3 +168,4 @@ trained_models/
 .vscode/
 *.tar.gz
 
+ncrf_configs/*
