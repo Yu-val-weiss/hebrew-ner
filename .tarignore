@@ -80,6 +80,7 @@ scratch/
 ./.DS_Store
 ./fasttext/cc.he.300.vec
 .tarignore
-archive.tar.gz
+*.tar.gz
 fasttext/
 trained_models/
+ncrf_configs/*

@@ -423,7 +423,7 @@ class Data:
             self.word_emb_dir = config[the_item]
         the_item = 'use_fasttext'
         if the_item in config:
-            self.use_fasttext = config[the_item]
+            self.use_fasttext = str2bool(config[the_item])
         the_item = 'char_emb_dir'
         if the_item in config:
             self.char_emb_dir = config[the_item]
