@@ -16,5 +16,8 @@ fasttext-archive:
 upload-fasttext:
 	scp fasttext_archive.tar.gz yw580@login-gpu.hpc.cam.ac.uk:/rds/user/yw580/hpc-work
 
+upload-slurm:
+	scp -r slurm/ yw580@login-gpu.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+
 clean:
 	rm -rf *archive.tar.gz
