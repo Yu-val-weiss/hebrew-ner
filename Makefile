@@ -19,5 +19,8 @@ upload-fasttext:
 upload-slurm:
 	scp -r slurm/ yw580@login-gpu.hpc.cam.ac.uk:/home/yw580/hebrew-ner
 
+upload-configs:
+	scp -r configs/ yw580@login-gpu.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+
 clean:
 	rm -rf *archive.tar.gz

@@ -84,3 +84,4 @@ scratch/
 fasttext/
 trained_models/
 ncrf_configs/*
+._*

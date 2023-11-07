@@ -3,6 +3,7 @@
 # @Date:   2017-06-15 14:11:08
 # @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
 # @Last Modified time: 2019-02-13 12:41:44
+import os
 import time
 import sys
 import argparse
@@ -20,7 +21,7 @@ from utils.data import Data
 import pickle
 
 
-seed_num = 42
+seed_num = 44
 random.seed(seed_num)
 torch.manual_seed(seed_num)
 np.random.seed(seed_num)
@@ -514,8 +515,10 @@ if __name__ == '__main__':
     parser.add_argument('--raw') 
     parser.add_argument('--loadmodel')
     parser.add_argument('--output') 
+    parser.add_argument('--moddir', help='Infix to add to directory path when training', default='None')
 
     args = parser.parse_args()
+    
     data = Data()
     data.HP_gpu = torch.cuda.is_available()
     if args.config == 'None':
@@ -535,6 +538,15 @@ if __name__ == '__main__':
         print("Seed num:",seed_num)
     else:
         data.read_config(args.config)
+        if args.moddir != 'None':
+            moddir = args.moddir.split("/")
+            old_dir = data.model_dir.split("/")
+            new_dir_no_file = old_dir[:-1] + moddir
+            new_dir = new_dir_no_file + old_dir[-1:]
+            dir_str = "/".join(new_dir)
+            if not os.path.exists(dir_str_no_file := "/".join(new_dir_no_file)):
+                os.makedirs(dir_str_no_file)
+            data.model_dir = dir_str
     # data.show_data_summary()
     status = data.status.lower()
     print("Seed num:",seed_num)
