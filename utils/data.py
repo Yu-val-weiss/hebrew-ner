@@ -111,7 +111,7 @@ class Data:
         if self.sentence_classification:
             print("     Start Sentence Classification task...")
         else:
-            print("     Start   Sequence   Laebling   task...")
+            print("     Start   Sequence   Labelling   task...")
         print("     Tag          scheme: %s"%(self.tagScheme))
         print("     Split         token: %s"%(self.split_token))
         print("     MAX SENTENCE LENGTH: %s"%(self.MAX_SENTENCE_LENGTH))
