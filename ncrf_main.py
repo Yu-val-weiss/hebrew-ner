@@ -474,16 +474,12 @@ def load_model_decode(data, name):
         model = SentClassifier(data)
     else:
         model = SeqLabel(data)
-    # model = SeqModel(data)
-    ## load model need consider if the model trained in GPU and load in CPU, or vice versa
-    # if not gpu:
-    #     model.load_state_dict(torch.load(model_dir))
-    #     # model.load_state_dict(torch.load(model_dir), map_location=lambda storage, loc: storage)
-    #     # model = torch.load(model_dir, map_location=lambda storage, loc: storage)
-    # else:
-    #     model.load_state_dict(torch.load(model_dir))
-    #     # model = torch.load(model_dir)
-    model.load_state_dict(torch.load(data.load_model_dir))
+    
+    
+    if torch.cuda.is_available():
+        model.load_state_dict(torch.load(data.load_model_dir))
+    else:
+        model.load_state_dict(torch.load(data.load_model_dir, map_location=torch.device('cpu')))
 
     print("Decode %s data, nbest: %s ..."%(name, data.nbest))
     start_time = time.time()
