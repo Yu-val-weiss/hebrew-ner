@@ -42,19 +42,19 @@ def load_vectors_alt(embedding_path):
             embedd_dict[first_col] = embedd
     return embedd_dict, embedd_dim
 
-
 if __name__ == '__main__':
-    print('loading vectors...')
-    data, dim = load_vectors_alt('fasttext/cc.he.300.vec')
-    print('loaded vectors')
-    # print('loading model...')
-    # ft = fasttext.load_model('fasttext/cc.he.300.bin')
-    # print('loaded model')
-    print('vector version')
-    print(dim)
-    print(data.get('ליברציה'))
-    # print('model version')
-    # print(ft.get_dimension())
-    # print(ft.get_word_vector('ליברציה'))
-    # print('nearest neighbours to שלום')
-    # print(ft.get_nearest_neighbors('שלום'))
+    pass
+    # print('loading vectors...')
+    # data, dim = load_vectors_alt('fasttext/cc.he.300.vec')
+    # print('loaded vectors')
+    # # print('loading model...')
+    # # ft = fasttext.load_model('fasttext/cc.he.300.bin')
+    # # print('loaded model')
+    # print('vector version')
+    # print(dim)
+    # print(data.get('ליברציה'))
+    # # print('model version')
+    # # print(ft.get_dimension())
+    # # print(ft.get_word_vector('ליברציה'))
+    # # print('nearest neighbours to שלום')
+    # # print(ft.get_nearest_neighbors('שלום'))
