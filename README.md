@@ -116,3 +116,17 @@ make clean
 ```bash
 tar -xvf archive.tar.gz
 ```
+
+## Seeds
+
+### List of seeds
+
+*Token single*: 46
+*Token multi*: 50
+*Morph*: 52
+
+### Updating seed
+
+```bash
+perl -pi -e 's/seed_num = [0-9]*/seed_num = 46/' /home/yw580/hebrew-ner/ncrf_main.py
+```
