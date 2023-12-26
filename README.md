@@ -122,8 +122,8 @@ tar -xvf archive.tar.gz
 ### List of seeds
 
 *Token single*: 46
-*Token multi*: 50
-*Morph*: 52
+*Token multi*: 52
+*Morph*: 50
 
 ### Updating seed
 
