@@ -1,3 +1,4 @@
+# type: ignore
 # -*- coding: utf-8 -*-
 # @Author: Jie
 # @Date:   2017-02-16 09:53:19
