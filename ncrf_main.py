@@ -22,7 +22,7 @@ from utils.data import Data
 import pickle
 
 
-seed_num = 44
+seed_num = 46
 random.seed(seed_num)
 torch.manual_seed(seed_num)
 np.random.seed(seed_num)
