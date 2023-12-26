@@ -22,5 +22,8 @@ upload-slurm:
 upload-configs:
 	scp -r configs/ yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
 
+upload-slurm-configs:
+	scp -r {configs,slurm}/ yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+
 clean:
 	rm -rf *archive.tar.gz
