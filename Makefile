@@ -17,10 +17,10 @@ upload-fasttext:
 	scp fasttext_archive.tar.gz yw580@login.hpc.cam.ac.uk:/rds/user/yw580/hpc-work
 
 upload-slurm:
-	rsync -av --progress slurm/ yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+	rsync -av --progress slurm yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
 
 upload-configs:
-	rsync -av --progress yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+	rsync -av --progress configs yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
 
 upload-slurm-configs:
 	rsync -av --progress {configs,slurm} yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner

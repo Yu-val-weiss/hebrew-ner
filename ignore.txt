@@ -88,3 +88,11 @@ ncrf_hpc_configs
 ncrf_results
 ._*
 .git/*
+Makefile
+Dockerfile
+.tarignore
+.gitignore
+README.md
+requirements.txt
+hpc_eval_results
+ignore.txt
