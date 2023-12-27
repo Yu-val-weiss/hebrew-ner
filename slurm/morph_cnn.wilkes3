@@ -10,7 +10,7 @@
 
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J token-multi-eval
+#SBATCH -J morph-cnn
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A CAINES-SL3-GPU
 #! How many whole nodes should be allocated?
@@ -59,11 +59,13 @@ source /home/yw580/venv/bin/activate
 application="python"
 
 #! Run options for the application:
-options="/home/yw580/hebrew-ner/ncrf_main.py --config /home/yw580/hebrew-ner/configs/token_multi_eval_hpc.conf"
+options="/home/yw580/hebrew-ner/ncrf_main.py --config /home/yw580/hebrew-ner/configs/morph_hpc.conf --moddir morph_seed_50"
 
 #! Work directory (i.e. where the job will run):
-workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
+#! workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
                              # in which sbatch is run.
+
+workdir="/home/yw580/rds/hpc-work"
 
 #! Are you using OpenMP (NB this is unrelated to OpenMPI)? If so increase this
 #! safe value to no more than 128:
