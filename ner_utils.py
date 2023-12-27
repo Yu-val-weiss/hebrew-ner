@@ -5,6 +5,11 @@ from utils.metric import get_ner_BMES, get_ner_fmeasure, fmeasure_from_file
 class WordLabel(NamedTuple):
     word: str
     label: str
+    
+class EvaluationMetrics(NamedTuple):
+    precision: float
+    recall: float
+    f: float
 
 def read_file(file: str, comment_delim='#', label_category_delim=' '):
     with open(file, encoding="utf-8") as f:
@@ -139,9 +144,14 @@ def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_
     
     print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F{beta}: {f_beta:.4f}")
     
+    return EvaluationMetrics(
+        precision, recall, f_beta
+    )
+    
+    
     
 if __name__ == '__main__':
     res = [x.label for x in read_file("hpc_eval_results/tok_multi.txt")]
     gold = [x.label for x in read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes")]
     
-    
+    evaluate_token_ner(res, gold, multi_tok=True)
