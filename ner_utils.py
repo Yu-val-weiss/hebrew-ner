@@ -151,7 +151,7 @@ def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_
     
     
 if __name__ == '__main__':
-    res = [x.label for x in read_file("hpc_eval_results/tok_multi.txt")]
+    res = [x.label for x in read_file("hpc_eval_results/tok_multi_cnn.txt")]
     gold = [x.label for x in read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes")]
     
     evaluate_token_ner(res, gold, multi_tok=True)
