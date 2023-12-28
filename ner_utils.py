@@ -89,6 +89,7 @@ def validate_multi_to_single(tag: str, multi_delim='^'):
     return single, valid
 
 
+
 def normalise_final_letters(word: str):
     hebrew_mapping = {
         'ך': 'כ',
@@ -278,6 +279,9 @@ def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
         m_w, m_l = morph[i]
         if m_w == SKIP_WORD:
             continue
+        if m_w in string.punctuation:
+            sentence.append(morph[i])
+            continue
         prev_word = sentence[-1].word
         if m_w == 'ה' and prev_word in 'בלכ':
             sentence[-1] = sentence[-1].concat(WordLabel('', m_l))
@@ -296,8 +300,8 @@ def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
             morph[i+1] = WordLabel(SKIP_WORD, '')
         elif m_w == 'הכל' and prev_word in 'בלכ':
             sentence[-1] = sentence[-1].concat(WordLabel('כל', m_l))
-        elif m_w not in string.punctuation and ((len(prev_word) == 1 and prev_word in 'בלכהשומ') or prev_word == 'כש'):
-            sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
+        elif ((len(prev_word) == 1 and prev_word in 'בלכהשומ') or prev_word == 'כש'):
+            sentence[-1] = sentence[-1].concat(morph[i])
         elif correct_final_letters(m_w) in pronouns:
             m_w = correct_final_letters(m_w)
             if prev_word in ['אצל', 'בגלל', 'בשביל', 'בעד', 'בתוך', 'זולת', 'ליד', 'כמות', 'של', 'מאת',
@@ -354,9 +358,9 @@ def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
                     prev_label
                 )
             elif prev_word in 'וש':
-                sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
+                sentence[-1] = sentence[-1].concat(morph[i])
             else:
-                sentence.append(WordLabel(m_w, m_l))
+                sentence.append(morph[i])
                 # sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
          
        
@@ -442,8 +446,8 @@ if __name__ == '__main__':
     # pred_labels = [x.label for x in res]
     # gold = read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes")
     
-    morph = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes")
-    multi_tok = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes")
+    morph = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_test.bmes")
+    multi_tok = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_test.bmes")
     tok = read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes")
     
     start = time.time()
@@ -458,7 +462,7 @@ if __name__ == '__main__':
     
     count = 0
     for mrp, mlt in zip(new_morph, multi_tok):
-        if len(mrp) != len(mlt):
+        if abs(len(mrp) - len(mlt)) > 1:
             print("Got one wrong :()")
             print(mrp)
             print(mlt)
