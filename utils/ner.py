@@ -2,8 +2,12 @@
 # @Author: Yuval Weiss
 import re
 import string
+import time
 from typing import Callable, Iterable, List, NamedTuple, Tuple
+
+from tqdm import tqdm
 from yap import yap_joint_api, aggregate_morph
+import pandas as pd
 
 class WordLabel(NamedTuple):
     word: str
@@ -18,15 +22,15 @@ class EvaluationMetrics(NamedTuple):
     recall: float
     f: float
 
-def read_file(file: str, comment_delim='#', label_category_delim=' '):
+def read_file(file: str, comment_delim='#', word_label_delim=' '):
     with open(file, encoding="utf-8") as f:
         return [
-            WordLabel(*l.strip().split(label_category_delim))
+            WordLabel(*l.strip().split(word_label_delim))
             for l in f
             if l.strip() and not l.startswith(comment_delim)
         ]
         
-def read_file_to_sentences(file: str, comment_delim='#', label_category_delim=' ') -> List[List[WordLabel]]:
+def read_file_to_sentences(file: str, comment_delim='#', word_label_delim=' ') -> List[List[WordLabel]]:
     sent = []
     curr_sent = []
     with open(file, encoding="utf-8") as f:
@@ -35,12 +39,42 @@ def read_file_to_sentences(file: str, comment_delim='#', label_category_delim=' 
                 continue
             l = l.strip()
             if l:
-                curr_sent.append(WordLabel(*l.split(label_category_delim)))
+                curr_sent.append(WordLabel(*l.split(word_label_delim)))
             else:
                 sent.append(curr_sent)
                 curr_sent = []
                 
     return sent
+
+
+def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' ', multi=False, multi_label_delim='^'):
+    '''
+    Reads a file of sentences, with each word NER labelled into a pandas dataframe
+    
+    Can use `r.groupby('SentNum').agg(list)` to get them aggregated into sentences
+    '''
+    def sent_iter():
+        curr_sent = 0
+        with open(file, encoding="utf-8") as f:
+            for l in f:
+                if l.startswith(comment_delim):
+                    continue
+                l = l.strip()
+                if l:
+                    word, label = l.split(word_label_delim)
+                    if multi:
+                        label = label.split(multi_label_delim)
+                    yield [curr_sent, word, label]
+                else:
+                    curr_sent += 1
+      
+    columns = ['SentNum', 'Word', 'Label'] 
+                
+    return pd.DataFrame(
+        data = sent_iter(),
+        columns = columns
+    )
+    
     
 # based on Appendix A in paper
 def validate_multi_to_single(tag: str, multi_delim='^'):
@@ -270,7 +304,7 @@ def make_spans(labels: Iterable[str]) -> List[str]:
         labels (list[str]): list of labels
 
     Returns:
-        list of tuple ((int, int), string): ((low, high), category)
+        list str: format is category@low,high
     """
     spans: List[str] = []
     for i, label in enumerate(labels):
@@ -284,16 +318,55 @@ def make_spans(labels: Iterable[str]) -> List[str]:
     return spans
 
 
-def align_morph_to_tok(morph: List[WordLabel], sentence: str, multi_delim='^', validate_to_single=True):
-    _, _, md = yap_joint_api(sentence)
+def align_morph_to_tok(morph_labels: List[str], morphemes: List[str], sentence: List[str], multi_delim='^', validate_to_single=True) -> List[str]:
+    _, _, md = yap_joint_api('\n'.join(sentence))
     md = aggregate_morph(md)
-    labels: List[str] = []
-    for group in md['FROM']:
-        label = multi_delim.join(morph[i].label for i in group)
+    lings, words = make_groupings_linguistically(morphemes)
+    # print(words)
+    m_lings = max(map(max, lings)) + 1
+    labels = []
+    m_yap = md['FROM'].apply(lambda x: max(x)).max() + 1
+    num_labs = len(morph_labels) 
+    pad_size = 0
+    if m_yap > num_labs: # more forms than labels
+        padding_list = ['O'] * (pad_size := (m_yap - num_labs))
+        morph_labels = padding_list + morph_labels        
+    for i, (gy, gl) in enumerate(zip(md['FROM'], lings)):
+        # print(f"gy: {gy}, gl: {gl}")
+        label = multi_delim.join(morph_labels[i] for i in gy)
+        label_l = multi_delim.join(morph_labels[i] for i in gl)
+        if label != label_l:
+            if words[i] == sentence[i]:
+                # print('choosing this', label_l, words[i], sentence[i])
+                label = label_l
         if validate_to_single:
             label, _ = validate_multi_to_single(label, multi_delim)
         labels.append(label)
     return labels
+
+
+
+def soft_merge_bio_labels(multitok_sents, tokmorph_sents, verbose=False):
+    new_sents = []
+    for (i, mt_sent), (sent_id, mor_sent) in zip(multitok_sents.iteritems(), tokmorph_sents.iteritems()):
+        new_sent = []
+        for (form, bio), (token_id, token_str, forms) in zip(mt_sent, mor_sent):
+            forms = forms.split('^')
+            bio = bio.split('^')
+            if len(forms) == len(bio):
+                new_forms = (1, list(zip(forms,bio)))
+            elif len(forms)>len(bio):
+                dif = len(forms) - len(bio)
+                new_forms = (2, list(zip(forms[:dif],['O']*dif)) + list(zip(forms[::-1], bio[::-1]))[::-1])
+                if verbose:
+                    print(new_forms)
+            else:
+                new_forms = (3, list(zip(forms[::-1], bio[::-1]))[::-1])
+                if verbose:
+                    print(new_forms)
+            new_sent.extend(new_forms[1])
+        new_sents.append(new_sent)
+    return new_sents
 
 
 def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_delim='^', beta=1):
@@ -306,13 +379,10 @@ def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_
     
     A named entity is correct only if it is an exact match of the corresponding entity in the data file.
     
-    Paper defaults beta for f_beta score to 1
+    Paper defaults beta to 1 for f_beta score
     '''
     
     # we can ignore BIOSE labels, only interested in category and location
-    
-    
-    assert len(pred) == len(gold)
     print("Evaluating performance...")
     
     corr_toks = sum(p == g for p,g in zip(pred, gold))
@@ -341,53 +411,57 @@ def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_
     )
     
     
+def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], multi_tok=False, multi_delim='^', beta=1):
+    assert len(pred) == len(gold)
+    print("Evaluating performance...")
+    
+    corr_toks = 0
+    tot = 0
+    for pp, gg in zip(pred, gold):
+        tot += len(pp)
+        corr_toks += sum(p == g for p,g in zip(pp, gg))
+    
+    print(f"Correct tokens: {corr_toks}, Total tokens: {tot}, Accuracy: {corr_toks / tot:.4f}")
+    
+    correct = 0
+    pred_len = 0
+    gold_len = 0
+    
+    for p, g in zip(pred, gold):
+        if not multi_tok:
+            pred_span, gold_span = make_spans(p), make_spans(g)
+        else:
+            lam: Callable[[str], str] = lambda x: validate_multi_to_single(x, multi_delim)[0]
+            pred_span, gold_span = make_spans(map(lam, p)), make_spans(map(lam, g))
+        # Precision is the percentage of named entities found by the learning system that are correct.
+        # Recall is the percentage of named entities present in the corpus that are found by the system.
+        correct += len(set(pred_span).intersection(set(gold_span)))
+        pred_len += len(pred_span)
+        gold_len += len(gold_span)
+        
+    precision = correct / pred_len
+    recall = correct / gold_len
+    f_beta = ((beta**2 + 1) * precision * recall) / (beta**2 * precision + recall)
+    
+    print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F{beta}: {f_beta:.4f}")
+    
+    return EvaluationMetrics(
+        precision, recall, f_beta
+    )
     
 if __name__ == '__main__':
-    # res = read_file("hpc_eval_results/morph_cnn_seed_50.txt")
-    # pred_labels = [x.label for x in res]
-    # gold = read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes")
+    MORPH = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes"
+    MULTI = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes"
+    TOK = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes"
+
+    r = read_file_to_sentences_df(MORPH, multi=False).groupby('SentNum').agg(list)
+    ts = read_file_to_sentences_df(MULTI, multi=False).groupby('SentNum').agg(list)
+    tok = read_file_to_sentences_df(TOK).groupby('SentNum').agg(list)
     
-    morph = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes")
-    multi_tok = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes")
-    tok = read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes")
-    
-    # _, _, md = yap_joint_api('\n'.join('\n'.join(x.label for x in mlt) for mlt in multi_tok))
-    
-    # count = 0
-    # for mrp, mlt in zip(morph, multi_tok):
-    #     fixed = align_morph_to_tok(mrp, '\n'.join(x.label for x in mlt))
-    #     if abs(len(fixed) - len(mlt)) > 1:
-    #         print("Got one wrong :(")
-    #         print(fixed)
-    #         print(mlt)
-    #         print("Diff in size", len(fixed) - len(mlt))
-    #         count += 1
+    f: List[List[str]] = []
+    for sentence, t in tqdm(zip(r.itertuples(), ts.itertuples()), total=500):
+        fixed = align_morph_to_tok(sentence.Label, sentence.Word, t.Word, validate_to_single=True)
+        f.append(fixed)
         
-    # _, _, md = yap_joint_api('\n'.join(x.label for x in multi_tok[0]))
-    words, labels = zip(*(x for x in multi_tok[0]))
-    print(words)
-    print(labels)
-    print(morph[0])
-    
-    fixed = align_morph_to_tok(morph[0],  '\n'.join(words), validate_to_single=False)
-    lin, word = (make_groupings_linguistically([x.word for x in morph[0]]))
-    print(word)
-    print(words)
-    print(len(lin))
-    print(len(fixed))
-    print(len(labels))
-    print(fixed)
-    print(labels)
-    
-    
-    
-    # print("Accuracy: ", (len(multi_tok) - count) / len(multi_tok))
-    
-    # for n_m, m in zip(new_morph, multi_tok):
-    #     print("Test", n_m, m)
-    
-    # gold = [x.label for x in gold]
-    
-    
-    
-    # evaluate_token_ner(pred_labels, gold, multi_tok=True)
+    print(evaluate_token_ner_nested(f, tok['Label'].to_list()))
+        
