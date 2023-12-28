@@ -3,4 +3,8 @@ services:
     build: .
     ports:
       - "8000:8000"
-      
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/yap/heb/healthcheck"]
+      interval: 1m
+      timeout: 3s
+      retries: 3
