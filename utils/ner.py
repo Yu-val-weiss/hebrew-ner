@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
+# @Author: Yuval Weiss
 import re
 import string
-from typing import Callable, Iterable, List, NamedTuple
-import time
+from typing import Callable, Iterable, List, NamedTuple, Tuple
+from yap import yap_joint_api, aggregate_morph
 
 class WordLabel(NamedTuple):
     word: str
@@ -9,6 +11,7 @@ class WordLabel(NamedTuple):
     def concat(self, wl: 'WordLabel', label_delim = '^'):
         return WordLabel(self.word + wl.word,
                          self.label + label_delim + wl.label)
+        
     
 class EvaluationMetrics(NamedTuple):
     precision: float
@@ -122,8 +125,7 @@ def remove_trailing_yud(word: str) -> str:
         return word[:-1]
     return word
 
-# actual words don't matter, just lengths of each sentence should match so עמי vs אתי doesn't matter
-def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
+def make_groupings_linguistically(morph: List[str]) -> Tuple[List[List[int]], List[str]]:
     single_style_endings = {
         "אני": "י",
         "אתה": "ך",
@@ -150,49 +152,61 @@ def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
         }
     pronouns = single_style_endings.keys()
     
-    sentence = [morph[0]]
+    sentence: List[str] = [morph[0]]
+    groups = [[0]]
     
     SKIP_WORD = '**SKIP**'
     
     for i in range(1, len(morph)):
-        m_w, m_l = morph[i]
+        m_w = morph[i]
         if m_w == SKIP_WORD:
             continue
         if m_w in string.punctuation:
             sentence.append(morph[i])
+            groups.append([i])
             continue
-        prev_word = sentence[-1].word
+        prev_word: str = sentence[-1]
         if m_w == 'ה' and prev_word in 'בלכ':
-            sentence[-1] = sentence[-1].concat(WordLabel('', m_l))
+            sentence[-1] = sentence[-1] + ''
+            groups[-1].append(i)
         elif m_w == 'ה' and prev_word in 'משו':
             assert i < len(morph) - 1
-            sentence[-1] = sentence[-1].concat(WordLabel('ה', m_l)).concat(morph[i+1])
-            morph[i+1] = WordLabel(SKIP_WORD, '')
+            sentence[-1] = sentence[-1] + 'ה' + morph[i+1]
+            groups[-1].extend([i, i+1])
+            morph[i+1] = SKIP_WORD
         elif m_w in ['ל', 'ב', 'כ'] and prev_word in 'וש':
             assert i < len(morph) - 1
             conc = morph[i+1]
-            if conc.word == 'ה':
-                conc = WordLabel('', conc.label)
-                conc = conc.concat(morph[i+2])
-                morph[i+2] = WordLabel(SKIP_WORD, '')
-            sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l)).concat(conc)
-            morph[i+1] = WordLabel(SKIP_WORD, '')
+            inds_to_add = [i+1]
+            if conc == 'ה':
+                conc = (morph[i+2])
+                morph[i+2] = SKIP_WORD
+                inds_to_add.append(i+2)
+                
+            sentence[-1] = sentence[-1] + m_w + conc
+            groups[-1].extend(inds_to_add)
+            morph[i+1] = SKIP_WORD
         elif m_w == 'הכל' and prev_word in 'בלכ':
-            sentence[-1] = sentence[-1].concat(WordLabel('כל', m_l))
+            sentence[-1] = sentence[-1] + 'כל'
+            groups[-1].append(i)
         elif ((len(prev_word) == 1 and prev_word in 'בלכהשומ') or prev_word == 'כש'):
-            sentence[-1] = sentence[-1].concat(morph[i])
+            sentence[-1] = sentence[-1] + morph[i]
+            groups[-1].append(i)
         elif correct_final_letters(m_w) in pronouns:
             m_w = correct_final_letters(m_w)
             if prev_word in ['אצל', 'בגלל', 'בשביל', 'בעד', 'בתוך', 'זולת', 'ליד', 'כמות', 'של', 'מאת',
                             'למען', 'לעמת', 'לקראת', 'לשם', 'מול', 'נגד', 'נכח', 'ב', 'ל', 'לעבר']:
                 prev_word = normalise_final_letters(prev_word)
-                sentence[-1] = sentence[-1].concat(WordLabel(single_style_endings[m_w], m_l))
-            elif prev_word == 'יד' and sentence[-2].word == 'על':
-                sentence[-1] = sentence[-1].concat(WordLabel(single_style_endings[m_w], m_l))
+                sentence[-1] = sentence[-1] + single_style_endings[m_w]
+                groups[-1].append(i)
+            elif prev_word == 'יד' and sentence[-2] == 'על':
+                sentence[-1] = sentence[-1] + single_style_endings[m_w]
+                groups[-1].append(i)
             elif (nrw := normalise_final_letters(remove_trailing_yud(prev_word))) in ['כלפ', 'ביד', 'בלעד', 'לגב', 'לפנ', 'בעקבות',
                                                                                         'על','עד','תחת','אחר', 'אל']:
-                sentence[-1] = WordLabel(nrw, sentence[-1].label)
-                sentence[-1] = sentence[-1].concat(WordLabel(plural_style_endings[m_w], m_l))
+                sentence[-1] = nrw
+                sentence[-1] = sentence[-1] + plural_style_endings[m_w]
+                groups[-1].append(i)
             elif prev_word == 'ממן' or prev_word == 'מ':
                 prev_word = 'מ'
                 from_endings = {
@@ -207,51 +221,47 @@ def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
                 "הם": "הם",
                 "הן": "הן",
                 }
-                sentence[-1] = sentence[-1].concat(WordLabel(from_endings[m_w], m_l))
+                sentence[-1] = sentence[-1] + from_endings[m_w]
+                groups[-1].append(i)
             elif correct_final_letters(prev_word) == 'עם':
-                sentence[-1] = WordLabel('את', sentence[-1].label)
+                sentence[-1] = 'את'
                 ending = single_style_endings[m_w]
                 if len(ending) == 2 and ending[0] == 'ה':
                     ending = ending[1]
-                sentence[-1] = sentence[-1].concat(WordLabel(ending, m_l))
+                sentence[-1] = sentence[-1] + ending
+                groups[-1].append(i)
             elif prev_word == 'את':
-                sentence[-1] = WordLabel('אות', sentence[-1].label)
+                sentence[-1] = 'אות'
                 ending = single_style_endings[m_w]
                 if len(ending) == 2 and ending[0] == 'ה':
                     ending = ending[1]
-                sentence[-1] = sentence[-1].concat(WordLabel(ending, m_l))
+                sentence[-1] = sentence[-1] + ending
+                groups[-1].append(i)
             elif prev_word == 'אות':
                 ending = single_style_endings[m_w]
                 if len(ending) == 2 and ending[0] == 'ה':
                     ending = ending[1]
-                sentence[-1] = sentence[-1].concat(WordLabel(ending, m_l))
+                sentence[-1] = sentence[-1] + ending
+                groups[-1].append(i)
             elif prev_word == 'כמו':
                 if m_w == 'אני':
-                    sentence[-1] = sentence[-1].concat(WordLabel('ני', m_l))
+                    sentence[-1] = sentence[-1] + 'ני'
                 else:
-                    sentence[-1] = sentence[-1].concat(WordLabel(single_style_endings[m_w], m_l))
+                    sentence[-1] = sentence[-1] + single_style_endings[m_w]
+                groups[-1].append(i)
             elif prev_word == 'לפי':
-                prev_label = sentence[-1].label
-                sentence[-1] = WordLabel(
-                    'לפ' + plural_style_endings[m_w],
-                    prev_label
-                )
+                sentence[-1] = 'לפ' + plural_style_endings[m_w]
+                groups[-1].append(i)
             elif prev_word in 'וש':
-                sentence[-1] = sentence[-1].concat(morph[i])
+                sentence[-1] = sentence[-1] + morph[i]
+                groups[-1].append(i)
             else:
                 sentence.append(morph[i])
-                # sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
-         
-       
-         
-        # elif prev_word == 'ה' and len(m_w) > 8:
-        #     sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
-                   
+                groups[-1].append(i)
         else:
-            sentence.append(WordLabel(m_w, m_l))
-            
-            
-    return sentence
+            groups.append([i])
+            sentence.append(m_w)
+    return groups, sentence
 
 def make_spans(labels: Iterable[str]) -> List[str]:
     """Returns label spans from labels for the purposes of evaluation. 
@@ -274,10 +284,16 @@ def make_spans(labels: Iterable[str]) -> List[str]:
     return spans
 
 
-def align_multi_to_morph(morph_sents: List[List[WordLabel]], multi_tok_sents: List[List[WordLabel]]):
-    for morph, multi in zip(morph_sents, multi_tok_sents):
-        for _ in zip(morph, multi):
-            return
+def align_morph_to_tok(morph: List[WordLabel], sentence: str, multi_delim='^', validate_to_single=True):
+    _, _, md = yap_joint_api(sentence)
+    md = aggregate_morph(md)
+    labels: List[str] = []
+    for group in md['FROM']:
+        label = multi_delim.join(morph[i].label for i in group)
+        if validate_to_single:
+            label, _ = validate_multi_to_single(label, multi_delim)
+        labels.append(label)
+    return labels
 
 
 def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_delim='^', beta=1):
@@ -335,27 +351,37 @@ if __name__ == '__main__':
     multi_tok = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes")
     tok = read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes")
     
-    start = time.time()
+    # _, _, md = yap_joint_api('\n'.join('\n'.join(x.label for x in mlt) for mlt in multi_tok))
     
-    # new_morph = align_morph_to_tok(morph, tok)
-    
-    new_morph = map(align_morph_sentence_to_tok, morph)
-    
-    end = time.time()
-    
-    print(f"Align time: {end-start}")
-    
-    count = 0
-    for mrp, mlt in zip(new_morph, multi_tok):
-        if abs(len(mrp) - len(mlt)) > 1:
-            print("Got one wrong :(")
-            print(mrp)
-            print(mlt)
-            print("Diff in size", len(mrp) - len(mlt))
-            count += 1
+    # count = 0
+    # for mrp, mlt in zip(morph, multi_tok):
+    #     fixed = align_morph_to_tok(mrp, '\n'.join(x.label for x in mlt))
+    #     if abs(len(fixed) - len(mlt)) > 1:
+    #         print("Got one wrong :(")
+    #         print(fixed)
+    #         print(mlt)
+    #         print("Diff in size", len(fixed) - len(mlt))
+    #         count += 1
         
+    # _, _, md = yap_joint_api('\n'.join(x.label for x in multi_tok[0]))
+    words, labels = zip(*(x for x in multi_tok[0]))
+    print(words)
+    print(labels)
+    print(morph[0])
     
-    print("Accuracy: ", (len(multi_tok) - count) / len(multi_tok))
+    fixed = align_morph_to_tok(morph[0],  '\n'.join(words), validate_to_single=False)
+    lin, word = (make_groupings_linguistically([x.word for x in morph[0]]))
+    print(word)
+    print(words)
+    print(len(lin))
+    print(len(fixed))
+    print(len(labels))
+    print(fixed)
+    print(labels)
+    
+    
+    
+    # print("Accuracy: ", (len(multi_tok) - count) / len(multi_tok))
     
     # for n_m, m in zip(new_morph, multi_tok):
     #     print("Test", n_m, m)
