@@ -1,16 +1,14 @@
 import re
 import string
-from typing import Callable, Iterable, List, NamedTuple, Tuple
-from utils.metric import get_ner_BMES, get_ner_fmeasure, fmeasure_from_file
+from typing import Callable, Iterable, List, NamedTuple
 import time
-
-#TODO: write an accumulator to convert morpheme to token, based on gold unsegmented data
 
 class WordLabel(NamedTuple):
     word: str
     label: str
     def concat(self, wl: 'WordLabel', label_delim = '^'):
-        return WordLabel(self.word+wl.word, self.label + label_delim + wl.label)
+        return WordLabel(self.word + wl.word,
+                         self.label + label_delim + wl.label)
     
 class EvaluationMetrics(NamedTuple):
     precision: float
@@ -125,125 +123,6 @@ def remove_trailing_yud(word: str) -> str:
     return word
 
 # actual words don't matter, just lengths of each sentence should match so עמי vs אתי doesn't matter
-def align_morph_to_tok(morph: List[WordLabel], tok: List[WordLabel]) -> List[WordLabel]:
-    '''
-    Linguistic info from https://hebrew-academy.org.il/2014/03/05/נטיית-מילות-היחס/
-    '''
-    # print(morph[0] == tok[0])
-    i = 0
-    new_word_labels = []
-    for j, t in enumerate(tok):
-        print(f"i: {i}, j: {j}")
-        if morph[i].word == t.word:
-            new_word_labels.append(morph[i])
-            i += 1
-        else:
-            word, label = [morph[i].word], [morph[i].label]
-            i += 1
-            while (w := ''.join(word)) != t.word.replace("״", '"').replace("”", '"'):
-                try:
-                    single_style_endings = {
-                            "אני": "י",
-                            "אתה": "ך",
-                            "את": "ך",
-                            "הוא": "ו",
-                            "היא": "ה",
-                            "אנחנו": "נו",
-                            "אתם": "כם",
-                            "אתן": "כן",
-                            "הם": "הם",
-                            "הן": "הן",
-                    }
-                    plural_style_endings = {
-                            "אני": "י",
-                            "אתה": "יך",
-                            "את": "יך",
-                            "הוא": "יו",
-                            "היא": "יה",
-                            "אנחנו": "ינו",
-                            "אתם": "יכם",
-                            "אתן": "יכן",
-                            "הם": "יהם",
-                            "הן": "יהן",
-                    }
-                    pronouns = single_style_endings.keys()
-                    m_w = morph[i].word
-                    if m_w == 'ה' and word[-1] in 'בלכ':
-                        word.append('')
-                    elif m_w == 'הכל' and word[-1] in 'בלכ':
-                        word.append('כל')  
-                    elif correct_final_letters(m_w) in pronouns:
-                        m_w = correct_final_letters(m_w)
-                        if word[-1] in ['אצל', 'בגלל', 'בשביל', 'בעד', 'בתוך', 'זולת', 'ליד', 'כמות', 'של', 'מאת',
-                                        'למען', 'לעמת', 'לקראת', 'לשם', 'מול', 'נגד', 'נכח', 'ב', 'ל', 'לעבר']:
-                            word[-1] = normalise_final_letters(word[-1])
-                            word.append(single_style_endings[m_w])
-                        elif word[-1] == 'יד' and word[-2] == 'על':
-                            word.append(single_style_endings[m_w])
-                        elif (nrw := normalise_final_letters(remove_trailing_yud(word[-1]))) in ['כלפ', 'ביד', 'בלעד', 'לגב', 'לפנ', 'בעקבות',
-                                                                                                 'על','עד','תחת','אחר', 'אל']:
-                            word[-1] = nrw
-                            word.append(plural_style_endings[m_w])
-                        elif word[-1] == 'ממן' or word[-1] == 'מ':
-                            word[-1] = 'מ'
-                            from_endings = {
-                            "אני": "מני",
-                            "אתה": "מך",
-                            "את": "מך",
-                            "הוא": "מנו",
-                            "היא": "מנה",
-                            "אנחנו": "מנו",
-                            "אתם": "כם",
-                            "אתן": "כן",
-                            "הם": "הם",
-                            "הן": "הן",
-                            }
-                            word.append(from_endings[m_w])
-                        elif correct_final_letters(word[-1]) == 'עם':
-                            word[-1] = 'את'
-                            ending = single_style_endings[m_w]
-                            if len(ending) == 2 and ending[0] == 'ה':
-                                ending = ending[1]
-                            word.append(ending)
-                        elif word[-1] == 'את':
-                            word[-1] = 'אות'
-                            ending = single_style_endings[m_w]
-                            if len(ending) == 2 and ending[0] == 'ה':
-                                ending = ending[1]
-                            word.append(ending)
-                        elif word[-1] == 'אות':
-                            word[-1] = ''
-                            ending = single_style_endings[m_w]
-                            if len(ending) == 2 and ending[0] == 'ה':
-                                ending = ending[1]
-                            word.append(ending)
-                        elif word[-1] == 'כמו':
-                            if m_w == 'אני':
-                                word.append('ני')
-                            else:
-                                word.append(single_style_endings[m_w])
-                        elif word[-1] == 'לפי':
-                            word[-1] = 'לפ'
-                            word.append(plural_style_endings[m_w])
-                        else:
-                            word.append(m_w)
-                                
-                    else:
-                         word.append(m_w)
-                    label.append(morph[i].label)
-                    i += 1
-                except:
-                    print(f"Oops {i}: {w[:10]}, {j}: {t.word}")
-                    raise
-
-            new_word_labels.append(WordLabel(w, '^'.join(label)))
-    
-        print(f"Just appended: {new_word_labels[-1]}")
-    
-    return new_word_labels
-
-
-
 def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
     single_style_endings = {
         "אני": "י",
@@ -395,6 +274,12 @@ def make_spans(labels: Iterable[str]) -> List[str]:
     return spans
 
 
+def align_multi_to_morph(morph_sents: List[List[WordLabel]], multi_tok_sents: List[List[WordLabel]]):
+    for morph, multi in zip(morph_sents, multi_tok_sents):
+        for _ in zip(morph, multi):
+            return
+
+
 def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_delim='^', beta=1):
     '''
     (Tjong Kim Sang and De Meulder 2003) for evaluation.
@@ -446,8 +331,8 @@ if __name__ == '__main__':
     # pred_labels = [x.label for x in res]
     # gold = read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes")
     
-    morph = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_test.bmes")
-    multi_tok = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_test.bmes")
+    morph = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes")
+    multi_tok = read_file_to_sentences("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes")
     tok = read_file("/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes")
     
     start = time.time()
@@ -463,7 +348,7 @@ if __name__ == '__main__':
     count = 0
     for mrp, mlt in zip(new_morph, multi_tok):
         if abs(len(mrp) - len(mlt)) > 1:
-            print("Got one wrong :()")
+            print("Got one wrong :(")
             print(mrp)
             print(mlt)
             print("Diff in size", len(mrp) - len(mlt))
