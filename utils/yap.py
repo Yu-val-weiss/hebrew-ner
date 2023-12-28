@@ -62,14 +62,12 @@ def make_data_frame_from_yap_str(df_str: str, columns: List[str]=LATTICE_COLUMNS
     dt_df = dt_df.apply(lambda col: pd.to_numeric(col) if col.name in numeric_cols else col)
     return dt_df
 
-def aggregate_morph(morph_disamb_df: pd.DataFrame, columns: List[str]=['FROM', 'FORM', 'TOKEN']):
-    r = (morph_disamb_df
+def aggregate_morph(morph_disamb_df: pd.DataFrame):
+    return (morph_disamb_df
             .groupby('TOKEN', sort=False)
             .agg(list)
             .reset_index()
-            )[columns]
-    # print(r)
-    return r
+            )
 
 
 if __name__ == '__main__':
