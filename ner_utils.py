@@ -1,4 +1,5 @@
 import re
+import string
 from typing import Callable, Iterable, List, NamedTuple, Tuple
 from utils.metric import get_ner_BMES, get_ner_fmeasure, fmeasure_from_file
 import time
@@ -271,12 +272,32 @@ def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
     
     sentence = [morph[0]]
     
-    for m_w, m_l in morph[1:]:
+    SKIP_WORD = '**SKIP**'
+    
+    for i in range(1, len(morph)):
+        m_w, m_l = morph[i]
+        if m_w == SKIP_WORD:
+            continue
         prev_word = sentence[-1].word
         if m_w == 'ה' and prev_word in 'בלכ':
             sentence[-1] = sentence[-1].concat(WordLabel('', m_l))
+        elif m_w == 'ה' and prev_word in 'משו':
+            assert i < len(morph) - 1
+            sentence[-1] = sentence[-1].concat(WordLabel('ה', m_l)).concat(morph[i+1])
+            morph[i+1] = WordLabel(SKIP_WORD, '')
+        elif m_w in ['ל', 'ב', 'כ'] and prev_word in 'וש':
+            assert i < len(morph) - 1
+            conc = morph[i+1]
+            if conc.word == 'ה':
+                conc = WordLabel('', conc.label)
+                conc = conc.concat(morph[i+2])
+                morph[i+2] = WordLabel(SKIP_WORD, '')
+            sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l)).concat(conc)
+            morph[i+1] = WordLabel(SKIP_WORD, '')
         elif m_w == 'הכל' and prev_word in 'בלכ':
             sentence[-1] = sentence[-1].concat(WordLabel('כל', m_l))
+        elif m_w not in string.punctuation and ((len(prev_word) == 1 and prev_word in 'בלכהשומ') or prev_word == 'כש'):
+            sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
         elif correct_final_letters(m_w) in pronouns:
             m_w = correct_final_letters(m_w)
             if prev_word in ['אצל', 'בגלל', 'בשביל', 'בעד', 'בתוך', 'זולת', 'ליד', 'כמות', 'של', 'מאת',
@@ -332,12 +353,13 @@ def align_morph_sentence_to_tok(morph: List[WordLabel]) -> List[WordLabel]:
                     'לפ' + plural_style_endings[m_w],
                     prev_label
                 )
+            elif prev_word in 'וש':
+                sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
             else:
                 sentence.append(WordLabel(m_w, m_l))
                 # sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
          
-        elif len(prev_word) == 1 and prev_word in 'בלכהשומ':
-            sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
+       
          
         # elif prev_word == 'ה' and len(m_w) > 8:
         #     sentence[-1] = sentence[-1].concat(WordLabel(m_w, m_l))
