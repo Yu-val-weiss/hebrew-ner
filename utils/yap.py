@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# @Author: Yuval Weiss
+from typing import List, Set
 import requests
 import pandas as pd
 from types import SimpleNamespace
@@ -29,7 +32,7 @@ PDEPREL: Dependency relation to the PHEAD; not relevant - YAP doesn't use it
 '''
 SEGMENTATION_COLUMNS = ['Split']
     
-def yap_joint(text: str):
+def yap_joint_api(text: str):
     text = text.strip() + '  ' # need 2 spaces at end
     
     payload = {"text": text}
@@ -41,37 +44,35 @@ def yap_joint(text: str):
     
     response_data = r.json(object_hook=lambda x: SimpleNamespace(**x))
     
-    dt_df = pd.DataFrame(
-        columns=CONLL_COLUMNS, 
-        data=(l.split('\t') for l in response_data.dep_tree.split("\n")[:-2]) # remove the last two spaces
-    )
+    dt_df = make_data_frame_from_yap_str(response_data.dep_tree, columns=CONLL_COLUMNS)
     
-    ma_df = pd.DataFrame(
-        columns=LATTICE_COLUMNS, 
-        data=(l.split('\t') for l in response_data.ma_lattice.split("\n")[:-2]) # remove the last two spaces
-    )
+    ma_df = make_data_frame_from_yap_str(response_data.ma_lattice)
     
-    md_df = pd.DataFrame(
-        columns=LATTICE_COLUMNS, 
-        data=(l.split('\t') for l in response_data.md_lattice.split("\n")[:-2]) # remove the last two spaces
-    )
-    
-    for df in (dt_df, ma_df, md_df):
-        df['FEATS'] = df['FEATS'].apply(lambda x: [] if x == '_' else x.split('|'))
+    md_df = make_data_frame_from_yap_str(response_data.md_lattice)
     
     return dt_df, ma_df, md_df
 
-def aggregate_morph(morph_disamb_df: pd.DataFrame):
-    return (morph_disamb_df[['FROM', 'FORM', 'TOKEN']]
+def make_data_frame_from_yap_str(df_str: str, columns: List[str]=LATTICE_COLUMNS, numeric_cols: Set[str] = {'ID', 'FROM', 'TO', 'HEAD', 'TOKEN'}):
+    dt_df = pd.DataFrame(
+        columns=columns, 
+        data=(l.split('\t') for l in df_str.split("\n")[:-2]) # remove the last two spaces
+    )
+    
+    dt_df['FEATS'] = dt_df['FEATS'].apply(lambda x: [] if x == '_' else x.split('|'))
+    dt_df = dt_df.apply(lambda col: pd.to_numeric(col) if col.name in numeric_cols else col)
+    return dt_df
+
+def aggregate_morph(morph_disamb_df: pd.DataFrame, columns: List[str]=['FROM', 'FORM', 'TOKEN']):
+    r = (morph_disamb_df
             .groupby('TOKEN', sort=False)
             .agg(list)
-            .reset_index())
+            .reset_index()
+            )[columns]
+    # print(r)
+    return r
 
 
 if __name__ == '__main__':
     s = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  "
-    _, _, md = yap_joint(s)
+    _, _, md =  yap_joint_api(s)
     r = aggregate_morph(md)
-    print(r)
-    # for line in r.iterrows():
-    #     print(line)
