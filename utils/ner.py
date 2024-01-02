@@ -2,10 +2,8 @@
 # @Author: Yuval Weiss
 import re
 import string
-import time
 from typing import Callable, Iterable, List, NamedTuple, Tuple
 
-from tqdm import tqdm
 from yap import yap_joint_api, aggregate_morph
 import pandas as pd
 
@@ -21,6 +19,9 @@ class EvaluationMetrics(NamedTuple):
     precision: float
     recall: float
     f: float
+    
+    def __str__(self) -> str:
+        return f"Metrics:\nP: {self.precision:.4f}\tR: {self.recall:.4f}\tF: {self.recall:.4f}"
 
 def read_file(file: str, comment_delim='#', word_label_delim=' '):
     with open(file, encoding="utf-8") as f:
@@ -47,7 +48,7 @@ def read_file_to_sentences(file: str, comment_delim='#', word_label_delim=' ') -
     return sent
 
 
-def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' ', multi=False, multi_label_delim='^'):
+def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' '):
     '''
     Reads a file of sentences, with each word NER labelled into a pandas dataframe
     
@@ -55,27 +56,61 @@ def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' '
     '''
     def sent_iter():
         curr_sent = 0
+        word_ind = 0
         with open(file, encoding="utf-8") as f:
             for l in f:
                 if l.startswith(comment_delim):
                     continue
-                l = l.strip()
-                if l:
+                if l := l.strip():
                     word, label = l.split(word_label_delim)
-                    if multi:
-                        label = label.split(multi_label_delim)
-                    yield [curr_sent, word, label]
+                    yield [curr_sent, word_ind, word, label]
+                    word_ind += 1
                 else:
                     curr_sent += 1
+                    word_ind = 0
       
-    columns = ['SentNum', 'Word', 'Label'] 
+    columns = ['SentNum', 'WordIndex', 'Word', 'Label'] 
                 
     return pd.DataFrame(
         data = sent_iter(),
         columns = columns
     )
     
+
+def merge_morph_from_multi_spliting(morph: pd.DataFrame, multi: pd.DataFrame, multi_label_delim='^', validate_to_single=False):
+    '''
+    Merges morphological-based predictions based on the splitting in the multi model. Validates to a single token if validate_to_single is True.
+    '''
+    morph_sents = morph.groupby('SentNum').agg(list)
+    splitting = pd.DataFrame(
+        {
+            'SentNum': multi['SentNum'],
+            'WordIndex': multi['WordIndex'],
+            'Splitting': multi['Label'].apply(lambda x: len(x.split(multi_label_delim)))
+        }
+    )
+    splitting = splitting.groupby('SentNum').agg(list)[['WordIndex', 'Splitting']]
+    def merge_morphs():
+        for (sent_num, words, labels), (word_nums, sent_splits) in zip(morph_sents[['Word', 'Label']].itertuples(), splitting.itertuples(index=False)):
+            word, label = [], []
+            for word_ind, split in zip(word_nums, sent_splits):
+                for _ in range(split):
+                    word.append(words.pop(0))
+                    label.append(labels.pop(0))
+                ret_label = multi_label_delim.join(label)
+                if validate_to_single:
+                    ret_label = validate_multi_to_single(ret_label)[0]
+                yield [sent_num, word_ind, multi_label_delim.join(word), ret_label]
+                word, label = [], []
+
+
+    columns = ['SentNum', 'WordIndex', 'MergedWord', 'Label']
     
+    return pd.DataFrame(
+        data = merge_morphs(),
+        columns = columns,
+    )
+
 # based on Appendix A in paper
 def validate_multi_to_single(tag: str, multi_delim='^'):
     valid_seq = re.compile(r'O+|O*BI*(EO*)?|I+|I*EO*|O*SO*')
@@ -319,6 +354,7 @@ def make_spans(labels: Iterable[str]) -> List[str]:
 
 
 def align_morph_to_tok(morph_labels: List[str], morphemes: List[str], sentence: List[str], multi_delim='^', validate_to_single=True) -> List[str]:
+    # this one maybe for inputs?
     _, _, md = yap_joint_api('\n'.join(sentence))
     md = aggregate_morph(md)
     lings, words = make_groupings_linguistically(morphemes)
@@ -343,30 +379,6 @@ def align_morph_to_tok(morph_labels: List[str], morphemes: List[str], sentence: 
             label, _ = validate_multi_to_single(label, multi_delim)
         labels.append(label)
     return labels
-
-
-
-def soft_merge_bio_labels(multitok_sents, tokmorph_sents, verbose=False):
-    new_sents = []
-    for (i, mt_sent), (sent_id, mor_sent) in zip(multitok_sents.iteritems(), tokmorph_sents.iteritems()):
-        new_sent = []
-        for (form, bio), (token_id, token_str, forms) in zip(mt_sent, mor_sent):
-            forms = forms.split('^')
-            bio = bio.split('^')
-            if len(forms) == len(bio):
-                new_forms = (1, list(zip(forms,bio)))
-            elif len(forms)>len(bio):
-                dif = len(forms) - len(bio)
-                new_forms = (2, list(zip(forms[:dif],['O']*dif)) + list(zip(forms[::-1], bio[::-1]))[::-1])
-                if verbose:
-                    print(new_forms)
-            else:
-                new_forms = (3, list(zip(forms[::-1], bio[::-1]))[::-1])
-                if verbose:
-                    print(new_forms)
-            new_sent.extend(new_forms[1])
-        new_sents.append(new_sent)
-    return new_sents
 
 
 def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_delim='^', beta=1):
@@ -450,18 +462,30 @@ def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], mult
     )
     
 if __name__ == '__main__':
+    def evaluate_alignment(args):
+        sentence, t = args
+        fixed = align_morph_to_tok(sentence.Label, sentence.Word, t.Word, validate_to_single=True)
+        return fixed
+
     MORPH = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes"
     MULTI = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes"
     TOK = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes"
-
-    r = read_file_to_sentences_df(MORPH, multi=False).groupby('SentNum').agg(list)
-    ts = read_file_to_sentences_df(MULTI, multi=False).groupby('SentNum').agg(list)
-    tok = read_file_to_sentences_df(TOK).groupby('SentNum').agg(list)
     
-    f: List[List[str]] = []
-    for sentence, t in tqdm(zip(r.itertuples(), ts.itertuples()), total=500):
-        fixed = align_morph_to_tok(sentence.Label, sentence.Word, t.Word, validate_to_single=True)
-        f.append(fixed)
-        
-    print(evaluate_token_ner_nested(f, tok['Label'].to_list()))
+    PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50.txt'
+    
+    morph = read_file_to_sentences_df(MORPH)
+    pred_morph = read_file_to_sentences_df(PRED_MORPH)
+    multi = read_file_to_sentences_df(MULTI)
+    tok = read_file_to_sentences_df(TOK)
+    
+    # print(pred_morph['Label'].dtype)
+    
+    print("Morph to morph")
+    evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
+    
+    merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True)
+    
+    print("Morph to single")
+    evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    
         
