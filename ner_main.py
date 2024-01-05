@@ -3,7 +3,7 @@ from utils.yap_graph import YapGraph
 import utils.ner as ner
 import pandas as pd
 
-def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label_delim='^', keep_all_if_none_valid=True):
+def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label_delim='^'):
     splitting = ner.make_multi_splitting_df(multi_df, multi_label_delim)
     valid_edges = set()
     for ((sent_id, tok_id), sub_lattice),(_, split) in zip(lattice_df.groupby(['SENTNUM', 'TOKEN']), splitting.groupby(['SentNum', 'WordIndex'])):
