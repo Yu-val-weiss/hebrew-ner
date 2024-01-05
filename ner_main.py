@@ -1,60 +1,53 @@
-import sys
-import utils.functions as fs
-import fasttext.util as util
-import fasttext
-import numpy as np
+import utils.yap as yap
+from utils.yap_graph import YapGraph
+import utils.ner as ner
+import pandas as pd
 
-
-def load_vectors(fname):
-    data = {}
-    with open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore') as fin:
-        n, dim = map(int, fin.readline().split())
-        for line in fin:
-            tokens = line.rstrip().split(' ')
-            word, vector = tokens[0], tokens[1:]
-            if dim != len(vector):
-                continue
-            data[word] = map(float, vector)
-        return data, n, dim
-
-def load_vectors_alt(embedding_path):
-    embedd_dim = -1
-    embedd_dict = dict()
-    with open(embedding_path, 'r', encoding="utf8") as file:
-        n, embedd_dim = map(int, file.readline().split())
-        for line in file:
-            line = line.strip()
-            if len(line) == 0:
-                continue
-            tokens = line.split()
-            if embedd_dim < 0:
-                embedd_dim = len(tokens) - 1
-            elif embedd_dim + 1 != len(tokens):
-                ## ignore illegal embedding line
-                continue
-                # assert (embedd_dim + 1 == len(tokens))
-            embedd = np.empty([1, embedd_dim])
-            embedd[:] = tokens[1:]
-            if sys.version_info[0] < 3:
-                first_col = tokens[0].decode('utf-8')
-            else:
-                first_col = tokens[0]
-            embedd_dict[first_col] = embedd
-    return embedd_dict, embedd_dim
+def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label_delim='^', keep_all_if_none_valid=True):
+    splitting = ner.make_multi_splitting_df(multi_df, multi_label_delim)
+    valid_edges = set()
+    for ((sent_id, tok_id), sub_lattice),(_, split) in zip(lattice_df.groupby(['SENTNUM', 'TOKEN']), splitting.groupby(['SentNum', 'WordIndex'])):
+        # tok_id in lattice starts from 1, so may need to offset
+        g = YapGraph.from_df(sub_lattice)
+        source, target = sub_lattice['FROM'].iat[0], sub_lattice['TO'].iat[-1]
+        paths = list(g.get_all_paths(source, target))
+        filtered_paths = [p for p in paths if len(p) == split['Splitting'].iat[0] + 1]
+        if filtered_paths != []:
+            paths = filtered_paths
+        for p in paths:
+            for f, t in zip(p[:-1], p[1:]):
+                valid_edges.add((sent_id, tok_id, f, t))
+                
+    cols_to_filter = ['SENTNUM', 'TOKEN', 'FROM', 'TO']
+    return lattice_df[lattice_df[cols_to_filter].apply(tuple, axis=1).isin(valid_edges)].reset_index(drop=True)
+    
 
 if __name__ == '__main__':
-    pass
-    # print('loading vectors...')
-    # data, dim = load_vectors_alt('fasttext/cc.he.300.vec')
-    # print('loaded vectors')
-    # # print('loading model...')
-    # # ft = fasttext.load_model('fasttext/cc.he.300.bin')
-    # # print('loaded model')
-    # print('vector version')
-    # print(dim)
-    # print(data.get('ליברציה'))
-    # # print('model version')
-    # # print(ft.get_dimension())
-    # # print(ft.get_word_vector('ליברציה'))
-    # # print('nearest neighbours to שלום')
-    # # print(ft.get_nearest_neighbors('שלום'))
+    MORPH = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes"
+    MULTI = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes"
+    TOK = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes"
+    
+    PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50.txt'
+    
+    morph = ner.read_file_to_sentences_df(MORPH)
+    pred_morph = ner.read_file_to_sentences_df(PRED_MORPH)
+    multi = ner.read_file_to_sentences_df(MULTI)
+    tok = ner.read_file_to_sentences_df(TOK)
+    
+    multi_test = ner.read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/scratch/test.txt')
+    
+    # evaluate_morpheme(PRED_MORPH, MORPH, MULTI)
+    
+    s = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  "
+    s2 = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  גנו גידל דגן בגן .  "
+    # ma, md =  yap.yap_joint_api(s)
+    ma_ma = yap.yap_ma_api(s)
+    
+    
+    x = prune_lattices(ma_ma, multi_test)
+    
+    print(yap.lattice_df_to_yap_str(x))
+    
+    md = yap.yap_joint_from_lattice_api(x)
+    
+    print(md)
