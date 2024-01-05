@@ -4,7 +4,7 @@ import re
 import string
 from typing import Callable, Iterable, List, NamedTuple, Tuple
 
-from yap import yap_joint_api, aggregate_morph
+from .yap import yap_joint_api, aggregate_morph
 import pandas as pd
 
 class WordLabel(NamedTuple):
@@ -52,6 +52,8 @@ def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' '
     '''
     Reads a file of sentences, with each word NER labelled into a pandas dataframe
     
+    Columns: `['SentNum', 'WordIndex', 'Word', 'Label']` 
+    
     Can use `r.groupby('SentNum').agg(list)` to get them aggregated into sentences
     '''
     def sent_iter():
@@ -79,16 +81,10 @@ def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' '
 
 def merge_morph_from_multi_spliting(morph: pd.DataFrame, multi: pd.DataFrame, multi_label_delim='^', validate_to_single=False):
     '''
-    Merges morphological-based predictions based on the splitting in the multi model. Validates to a single token if validate_to_single is True.
+    Merges morphological-based predictions based on the splitting in the multi model. Validates to a single token if `validate_to_single` is `True`.
     '''
     morph_sents = morph.groupby('SentNum').agg(list)
-    splitting = pd.DataFrame(
-        {
-            'SentNum': multi['SentNum'],
-            'WordIndex': multi['WordIndex'],
-            'Splitting': multi['Label'].apply(lambda x: len(x.split(multi_label_delim)))
-        }
-    )
+    splitting = make_multi_splitting_df(multi, multi_label_delim)
     splitting = splitting.groupby('SentNum').agg(list)[['WordIndex', 'Splitting']]
     def merge_morphs():
         for (sent_num, words, labels), (word_nums, sent_splits) in zip(morph_sents[['Word', 'Label']].itertuples(), splitting.itertuples(index=False)):
@@ -110,6 +106,21 @@ def merge_morph_from_multi_spliting(morph: pd.DataFrame, multi: pd.DataFrame, mu
         data = merge_morphs(),
         columns = columns,
     )
+
+def make_multi_splitting_df(multi: pd.DataFrame, multi_label_delim='^'):
+    '''
+    Columns: `['SentNum', 'WordIndex', 'Splitting']`
+    '''
+    splitting = pd.DataFrame(
+        {
+            'SentNum': multi['SentNum'],
+            'WordIndex': multi['WordIndex'],
+            'Splitting': multi['Label'].apply(lambda x: len(x.split(multi_label_delim)))
+        }
+    )
+    
+    return splitting
+
 
 # based on Appendix A in paper
 def validate_multi_to_single(tag: str, multi_delim='^'):
@@ -355,7 +366,7 @@ def make_spans(labels: Iterable[str]) -> List[str]:
 
 def align_morph_to_tok(morph_labels: List[str], morphemes: List[str], sentence: List[str], multi_delim='^', validate_to_single=True) -> List[str]:
     # this one maybe for inputs?
-    _, _, md = yap_joint_api('\n'.join(sentence))
+    _, md = yap_joint_api('\n'.join(sentence))
     md = aggregate_morph(md)
     lings, words = make_groupings_linguistically(morphemes)
     # print(words)
@@ -461,12 +472,22 @@ def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], mult
         precision, recall, f_beta
     )
     
+    
+def evaluate_morpheme(morph_pred_fp: str, morph_gold_fp: str, multi_gold_fp: str, multi_label_delim = '^'):
+    morph = read_file_to_sentences_df(morph_gold_fp)
+    pred_morph = read_file_to_sentences_df(morph_pred_fp)
+    multi = read_file_to_sentences_df(multi_gold_fp) 
+    print("Morph to morph")
+    m_to_m = evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
+    
+    merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True)
+    
+    print("Morph to single")
+    m_to_multi = evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    
+    return m_to_m, m_to_multi
+    
 if __name__ == '__main__':
-    def evaluate_alignment(args):
-        sentence, t = args
-        fixed = align_morph_to_tok(sentence.Label, sentence.Word, t.Word, validate_to_single=True)
-        return fixed
-
     MORPH = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes"
     MULTI = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes"
     TOK = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes"
@@ -478,14 +499,19 @@ if __name__ == '__main__':
     multi = read_file_to_sentences_df(MULTI)
     tok = read_file_to_sentences_df(TOK)
     
-    # print(pred_morph['Label'].dtype)
+    # evaluate_morpheme(PRED_MORPH, MORPH, MULTI)
     
-    print("Morph to morph")
-    evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
+    for a, df in make_multi_splitting_df(multi).groupby(['SentNum', 'WordIndex']):
+        print(df)
     
-    merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True)
+    # # print(pred_morph['Label'].dtype)
     
-    print("Morph to single")
-    evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    # print("Morph to morph")
+    # evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
+    
+    # merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True)
+    
+    # print("Morph to single")
+    # evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
     
         
