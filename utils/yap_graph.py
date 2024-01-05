@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# @Author: Yuval Weiss
 import copy
 import math
 from typing import Dict, List, NamedTuple, Set, Union
