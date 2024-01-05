@@ -6,7 +6,7 @@ import pandas as pd
 from types import SimpleNamespace
 
 YAP_PATH = "http://localhost:8000/yap/heb"
-LATTICE_COLUMNS = ['FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']
+LATTICE_COLUMNS = ['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']
 '''
 FROM: Index of the outgoing vertex of the edge
 TO: Index of the incoming vertex of the edge
@@ -17,7 +17,7 @@ POS_TAG: Fine-grained part-of-speech tag; underscore if not available; in YAP bo
 FEATS: List of morphological features separated by a vertical bar (|) from a pre-defined language-specific inventory; underscore if not available
 TOKEN: Source token index
 '''
-CONLL_COLUMNS = ['ID', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'HEAD', 'DEPREL', 'PHEAD', 'PDEPREL']
+CONLL_COLUMNS = ['SENTNUM', 'ID', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'HEAD', 'DEPREL', 'PHEAD', 'PDEPREL']
 '''
 ID: Morpheme index, starting at 1 for each new sentence
 FORM: Word form or punctuation mark
@@ -30,10 +30,10 @@ DEPREL: Dependency relation to the HEAD. The dependency relation of a token with
 PHEAD: Projective head; Not relevant - YAP doesn't use it
 PDEPREL: Dependency relation to the PHEAD; not relevant - YAP doesn't use it
 '''
-SEGMENTATION_COLUMNS = ['Split']
     
 def yap_joint_api(text: str):
     text = text.strip() + '  ' # need 2 spaces at end
+    # NOTE: for multiple sentences, need double space or \n after full stop.
     
     payload = {"text": text}
     headers = {"content-type": "application/json"}
@@ -44,23 +44,62 @@ def yap_joint_api(text: str):
     
     response_data = r.json(object_hook=lambda x: SimpleNamespace(**x))
     
-    dt_df = make_data_frame_from_yap_str(response_data.dep_tree, columns=CONLL_COLUMNS)
+    # dt_df = make_data_frame_from_yap_str(response_data.dep_tree, columns=CONLL_COLUMNS)
     
     ma_df = make_data_frame_from_yap_str(response_data.ma_lattice)
     
     md_df = make_data_frame_from_yap_str(response_data.md_lattice)
     
-    return dt_df, ma_df, md_df
+    return ma_df, md_df
+
+
+def yap_joint_from_lattice_api(lattice: pd.DataFrame):
+    s = lattice_df_to_yap_str(lattice)
+    payload = {"amb_lattice": s}
+    headers = {"content-type": "application/json"}
+
+    r = requests.get(f"{YAP_PATH}/joint/lattice", json=payload, headers=headers)
+
+    r.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+    
+    response_data = r.json(object_hook=lambda x: SimpleNamespace(**x))
+    
+    md_df = make_data_frame_from_yap_str(response_data.md_lattice)
+    
+    return md_df
+    
+
+def yap_ma_api(text: str):
+    text = text.strip() + '  ' # need 2 spaces at end
+    # NOTE: for multiple sentences, need double space or \n after full stop.
+    
+    payload = {"text": text}
+    headers = {"content-type": "application/json"}
+
+    r = requests.get(f"{YAP_PATH}/ma", json=payload, headers=headers)
+
+    r.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+    
+    response_data = r.json(object_hook=lambda x: SimpleNamespace(**x))
+    
+    ma_df = make_data_frame_from_yap_str(response_data.ma_lattice)
+    
+    return ma_df
+
 
 def make_data_frame_from_yap_str(df_str: str, columns: List[str]=LATTICE_COLUMNS, numeric_cols: Set[str] = {'ID', 'FROM', 'TO', 'HEAD', 'TOKEN'}):
-    dt_df = pd.DataFrame(
-        columns=columns, 
-        data=(l.split('\t') for l in df_str.split("\n")[:-2]) # remove the last two spaces
-    )
-    
-    dt_df['FEATS'] = dt_df['FEATS'].apply(lambda x: [] if x == '_' else x.split('|'))
-    dt_df = dt_df.apply(lambda col: pd.to_numeric(col) if col.name in numeric_cols else col)
-    return dt_df
+    dfs = []
+    for sent_num, df_s in enumerate(df_str.strip().split('\n\n')):
+        dt_df = pd.DataFrame(
+            columns=columns, 
+            data=(([sent_num] + l.split('\t')) for l in df_s.strip().split("\n"))
+        )
+        # dt_df['FEATS'] = dt_df['FEATS'].apply(lambda x: [] if x == '_' else x.split('|'))
+        dt_df = dt_df.apply(lambda col: pd.to_numeric(col) if col.name in numeric_cols else col)
+        dfs.append(dt_df)
+
+    return pd.concat(dfs).reset_index(drop=True)
+
 
 def aggregate_morph(morph_disamb_df: pd.DataFrame):
     return (morph_disamb_df
@@ -68,9 +107,24 @@ def aggregate_morph(morph_disamb_df: pd.DataFrame):
             .agg(list)
             .reset_index()
             )
+    
+    
+def lattice_df_to_yap_str(lattice: pd.DataFrame):
+    x = [df
+         .drop('SENTNUM', axis='columns')
+         .to_csv(header=False, index=False, sep='\t')
+         for _, df
+         in lattice.groupby('SENTNUM')]
+    return '\n\n'.join(x).strip() + '\n\n'
+
+
+
 
 
 if __name__ == '__main__':
     s = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  "
-    _, _, md =  yap_joint_api(s)
-    r = aggregate_morph(md)
+    s2 = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  גנו גידל דגן בגן .  "
+    ganan = "גנן גידל דגן בגן .  "
+    # ma, md =  yap_joint_api(s2)
+    ma_ma = yap_ma_api(s2)
+    print(yap_joint_from_lattice_api(ma_ma))
