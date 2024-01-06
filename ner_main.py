@@ -1,3 +1,4 @@
+import time
 import utils.yap as yap
 from utils.yap_graph import YapGraph
 import utils.ner as ner
@@ -10,8 +11,9 @@ def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label
         # tok_id in lattice starts from 1, so may need to offset
         g = YapGraph.from_df(sub_lattice)
         source, target = sub_lattice['FROM'].iat[0], sub_lattice['TO'].iat[-1]
-        paths = list(g.get_all_paths(source, target))
-        filtered_paths = [p for p in paths if len(p) == split['Splitting'].iat[0] + 1]
+        path_len = split['Splitting'].iat[0] + 1
+        paths = list(g.get_all_paths(source, target, limit=path_len))
+        filtered_paths = [p for p in paths if len(p) == path_len]
         if filtered_paths != []:
             paths = filtered_paths
         for p in paths:
@@ -41,13 +43,32 @@ if __name__ == '__main__':
     s = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  "
     s2 = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  גנו גידל דגן בגן .  "
     # ma, md =  yap.yap_joint_api(s)
-    ma_ma = yap.yap_ma_api(s)
+    # ma_ma = yap.yap_ma_api(s)
     
+    ma = yap.yap_ma_api(ner.raw_toks_str_from_ner_df(tok))
     
-    x = prune_lattices(ma_ma, multi_test)
+    print("MA complete")
     
-    print(yap.lattice_df_to_yap_str(x))
+    x = prune_lattices(ma, multi)
     
-    md = yap.yap_joint_from_lattice_api(x)
+    print("Pruning complete")
     
-    print(md)
+    # print("Disambiguating lattices...")
+    
+    # s = time.time()
+    
+    # print(yap.yap_joint_from_lattice_api(ma))
+    
+    # print("Unpruned took", time.time() - s)
+    
+    print("Dismabiguating pruned lattice...")
+    
+    s = time.time()
+    
+    print(yap.yap_joint_from_lattice_api(x))
+    
+    print("Pruned took", time.time() - s)
+    
+    # md = yap.yap_joint_from_lattice_api(x)
+    
+    # print(md)
