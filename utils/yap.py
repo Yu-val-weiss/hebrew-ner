@@ -115,9 +115,7 @@ def lattice_df_to_yap_str(lattice: pd.DataFrame):
          .to_csv(header=False, index=False, sep='\t')
          for _, df
          in lattice.groupby('SENTNUM')]
-    return '\n\n'.join(x).strip() + '\n\n'
-
-
+    return '\n\n'.join(x).strip() + '\n\n' 
 
 
 
