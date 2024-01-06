@@ -4,7 +4,7 @@ import re
 import string
 from typing import Callable, Iterable, List, NamedTuple, Tuple
 
-from .yap import yap_joint_api, aggregate_morph
+from utils.yap import yap_joint_api, aggregate_morph
 import pandas as pd
 
 class WordLabel(NamedTuple):
@@ -473,10 +473,7 @@ def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], mult
     )
     
     
-def evaluate_morpheme(morph_pred_fp: str, morph_gold_fp: str, multi_gold_fp: str, multi_label_delim = '^'):
-    morph = read_file_to_sentences_df(morph_gold_fp)
-    pred_morph = read_file_to_sentences_df(morph_pred_fp)
-    multi = read_file_to_sentences_df(multi_gold_fp) 
+def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.DataFrame, multi_label_delim = '^'):
     print("Morph to morph")
     m_to_m = evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
     
@@ -501,9 +498,8 @@ if __name__ == '__main__':
     
     # evaluate_morpheme(PRED_MORPH, MORPH, MULTI)
     
-    for a, df in make_multi_splitting_df(multi).groupby(['SentNum', 'WordIndex']):
-        print(df)
-    
+    pred_multi = read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/tok_multi_cnn.txt')
+    evaluate_token_ner(pred_multi['Label'].to_list(), multi['Label'].to_list(), multi_tok=True)
     # # print(pred_morph['Label'].dtype)
     
     # print("Morph to morph")
