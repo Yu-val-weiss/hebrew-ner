@@ -2,7 +2,7 @@
 # @Author: Yuval Weiss
 import copy
 import math
-from typing import Dict, List, NamedTuple, Set, Union
+from typing import Dict, List, NamedTuple, Union
 
 import pandas as pd
 
@@ -52,7 +52,7 @@ class YapGraph:
     def __getitem__(self, x):
         return self.adj(x)
     
-    def get_all_paths(self, start, end, limit=math.inf):
+    def get_all_paths(self, start: int, end: int, limit=math.inf):
         '''
         Returns an iterator over all paths, each of which is a list of ints, using the iterator version of DFS.
         '''
@@ -72,7 +72,8 @@ class YapGraph:
                     path.append(w)
                     s.append(self.adj(w))
             else: # len(path) == limit
-                if w == end or end in peek: # note `in` consumes the iterator, but this is fine, since we are at max length 
+                if w == end or end in peek: 
+                    # note `in` consumes the iterator, but this is fine, since we are at max depth, so want to check if reachable from here 
                     yield path + [end]
                 # backtrack
                 s.pop()
