@@ -4,7 +4,7 @@ import re
 import string
 from typing import Callable, Iterable, List, NamedTuple, Tuple
 
-from utils.yap import yap_joint_api, aggregate_morph
+import utils.yap as yap
 import pandas as pd
 
 class WordLabel(NamedTuple):
@@ -366,8 +366,8 @@ def make_spans(labels: Iterable[str]) -> List[str]:
 
 def align_morph_to_tok(morph_labels: List[str], morphemes: List[str], sentence: List[str], multi_delim='^', validate_to_single=True) -> List[str]:
     # this one maybe for inputs?
-    _, md = yap_joint_api('\n'.join(sentence))
-    md = aggregate_morph(md)
+    _, md = yap.yap_joint_api('\n'.join(sentence))
+    md = yap.aggregate_morph(md)
     lings, words = make_groupings_linguistically(morphemes)
     # print(words)
     m_lings = max(map(max, lings)) + 1
@@ -483,6 +483,13 @@ def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.D
     m_to_multi = evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
     
     return m_to_m, m_to_multi
+
+def raw_toks_str_from_ner_df(df: pd.DataFrame) -> str:
+    return (df
+            .drop('WordIndex', axis='columns')
+            .groupby('SentNum')
+            .agg('\n'.join)
+            .agg('\n\n'.join)['Word']) + '\n\n'
     
 if __name__ == '__main__':
     MORPH = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes"
@@ -498,8 +505,8 @@ if __name__ == '__main__':
     
     # evaluate_morpheme(PRED_MORPH, MORPH, MULTI)
     
-    pred_multi = read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/tok_multi_cnn.txt')
-    evaluate_token_ner(pred_multi['Label'].to_list(), multi['Label'].to_list(), multi_tok=True)
+    # pred_multi = read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/tok_multi_cnn.txt')
+    # evaluate_token_ner(pred_multi['Label'].to_list(), multi['Label'].to_list(), multi_tok=True)
     # # print(pred_morph['Label'].dtype)
     
     # print("Morph to morph")
@@ -509,5 +516,8 @@ if __name__ == '__main__':
     
     # print("Morph to single")
     # evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    full_ma = yap.yap_ma_api(raw_toks_str_from_ner_df(tok))
     
-        
+    print(full_ma)
+    
+    # print(raw_toks)
