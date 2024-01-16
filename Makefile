@@ -27,3 +27,6 @@ upload-slurm-configs:
 
 clean:
 	rm -rf *archive.tar.gz
+
+run-yap:
+	cd /Users/yuval/go/src/yap && go build . && ./yap api
