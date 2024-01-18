@@ -8,6 +8,8 @@ if __name__ == '__main__':
     tok_str = ner.raw_toks_str_from_ner_df(tok)
 
     _, md = yap.yap_joint_api(tok_str)
+    
+    md['FORM'] = md['FORM'].apply(lambda x: x + ' O')
 
 
     with open('utils_eval_files/yap_morph_dev.txt', 'w') as w:
