@@ -473,11 +473,11 @@ def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], mult
     )
     
     
-def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.DataFrame, multi_label_delim = '^'):
+def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.DataFrame, tok: pd.DataFrame, multi_label_delim = '^'):
     print("Morph to morph")
     m_to_m = evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
     
-    merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True)
+    merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True, multi_label_delim=multi_label_delim)
     
     print("Morph to single")
     m_to_multi = evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
@@ -485,11 +485,9 @@ def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.D
     return m_to_m, m_to_multi
 
 def raw_toks_str_from_ner_df(df: pd.DataFrame) -> str:
-    return (df
-            .drop('WordIndex', axis='columns')
-            .groupby('SentNum')
-            .agg('\n'.join)
-            .agg('\n\n'.join)['Word']) + '\n\n'
+    return '\n\n'.join(df
+            .groupby('SentNum')['Word']
+            .agg('\n'.join)) + '\n\n'
     
 if __name__ == '__main__':
     MORPH = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes"
@@ -516,8 +514,14 @@ if __name__ == '__main__':
     
     # print("Morph to single")
     # evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
-    full_ma = yap.yap_ma_api(raw_toks_str_from_ner_df(tok))
+    # full_ma = yap.yap_ma_api(raw_toks_str_from_ner_df(tok))
     
-    print(full_ma)
+    tok_str = raw_toks_str_from_ner_df(tok[tok['SentNum']])
+    
+    _, md = yap.yap_joint_api(tok_str)
+    
+    
+    with open('utils_eval_files/yap_morph_dev.txt', 'w') as w:
+        w.write('\n\n'.join(md.groupby('SENTNUM')['FORM'].agg('\n'.join)))
     
     # print(raw_toks)
