@@ -8,6 +8,7 @@ from types import SimpleNamespace
 YAP_PATH = "http://localhost:8000/yap/heb"
 LATTICE_COLUMNS = ['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']
 '''
+SENTNUM: Index of the sentence
 FROM: Index of the outgoing vertex of the edge
 TO: Index of the incoming vertex of the edge
 FORM: word form or punctuation mark
@@ -19,6 +20,7 @@ TOKEN: Source token index
 '''
 CONLL_COLUMNS = ['SENTNUM', 'ID', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'HEAD', 'DEPREL', 'PHEAD', 'PDEPREL']
 '''
+SENTNUM: Index of the sentence
 ID: Morpheme index, starting at 1 for each new sentence
 FORM: Word form or punctuation mark
 LEMMA: Lemma of word form; underscore if not available
@@ -32,6 +34,20 @@ PDEPREL: Dependency relation to the PHEAD; not relevant - YAP doesn't use it
 '''
     
 def yap_joint_api(text: str):
+    '''
+    Returns `(ma, md)` Dataframes 
+    
+    Columns are `['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']`
+        SENTNUM: Index of the sentence
+        FROM: Index of the outgoing vertex of the edge
+        TO: Index of the incoming vertex of the edge
+        FORM: word form or punctuation mark
+        LEMMA: Lemma of the word form; underscore if not available
+        C_POS_TAG: Coarse-grained part-of-speech tag; underscore if not available
+        POS_TAG: Fine-grained part-of-speech tag; underscore if not available; in YAP both POSTAG and CPOSTAG are always identical
+        FEATS: List of morphological features separated by a vertical bar (|); underscore if not available
+        TOKEN: Source token index
+    '''
     text = text.strip() + '  ' # need 2 spaces at end
     # NOTE: for multiple sentences, need double space or \n after full stop.
     
@@ -54,6 +70,22 @@ def yap_joint_api(text: str):
 
 
 def yap_joint_from_lattice_api(lattice: pd.DataFrame):
+    '''
+    Input `ma` lattice Dataframe
+    
+    Returns `(md)` Dataframe
+    
+    Columns are `['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']`
+        SENTNUM: Index of the sentence
+        FROM: Index of the outgoing vertex of the edge
+        TO: Index of the incoming vertex of the edge
+        FORM: word form or punctuation mark
+        LEMMA: Lemma of the word form; underscore if not available
+        C_POS_TAG: Coarse-grained part-of-speech tag; underscore if not available
+        POS_TAG: Fine-grained part-of-speech tag; underscore if not available; in YAP both POSTAG and CPOSTAG are always identical
+        FEATS: List of morphological features separated by a vertical bar (|); underscore if not available
+        TOKEN: Source token index
+    '''
     s = lattice_df_to_yap_str(lattice)
     payload = {"amb_lattice": s}
     headers = {"content-type": "application/json"}
@@ -70,6 +102,19 @@ def yap_joint_from_lattice_api(lattice: pd.DataFrame):
     
 
 def yap_ma_api(text: str):
+    '''
+    Returns `ma` Dataframe
+    
+    Columns are `['FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']`
+        FROM: Index of the outgoing vertex of the edge
+        TO: Index of the incoming vertex of the edge
+        FORM: word form or punctuation mark
+        LEMMA: Lemma of the word form; underscore if not available
+        C_POS_TAG: Coarse-grained part-of-speech tag; underscore if not available
+        POS_TAG: Fine-grained part-of-speech tag; underscore if not available; in YAP both POSTAG and CPOSTAG are always identical
+        FEATS: List of morphological features separated by a vertical bar (|); underscore if not available
+        TOKEN: Source token index
+    '''
     text = text.strip() + '  ' # need 2 spaces at end
     # NOTE: for multiple sentences, need double space or \n after full stop.
     
@@ -88,6 +133,18 @@ def yap_ma_api(text: str):
 
 
 def make_data_frame_from_yap_str(df_str: str, columns: List[str]=LATTICE_COLUMNS, numeric_cols: Set[str] = {'ID', 'FROM', 'TO', 'HEAD', 'TOKEN'}):
+    '''
+    Columns are `['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']`
+        SENTNUM: Index of the sentence
+        FROM: Index of the outgoing vertex of the edge
+        TO: Index of the incoming vertex of the edge
+        FORM: word form or punctuation mark
+        LEMMA: Lemma of the word form; underscore if not available
+        C_POS_TAG: Coarse-grained part-of-speech tag; underscore if not available
+        POS_TAG: Fine-grained part-of-speech tag; underscore if not available; in YAP both POSTAG and CPOSTAG are always identical
+        FEATS: List of morphological features separated by a vertical bar (|); underscore if not available
+        TOKEN: Source token index
+    '''
     dfs = []
     for sent_num, df_s in enumerate(df_str.strip().split('\n\n')):
         dt_df = pd.DataFrame(
@@ -124,5 +181,8 @@ if __name__ == '__main__':
     s2 = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  גנו גידל דגן בגן .  "
     ganan = "גנן גידל דגן בגן .  "
     # ma, md =  yap_joint_api(s2)
-    ma_ma = yap_ma_api(s2)
-    print(yap_joint_from_lattice_api(ma_ma))
+    _, md = yap_joint_api(s2)
+    md = md.groupby('SENTNUM')['FORM'].agg('\n'.join)
+    with open('test.txt', 'w') as w:
+        w.write('\n\n'.join(md) + '\n\n')
+    
