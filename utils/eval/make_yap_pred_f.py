@@ -9,8 +9,12 @@ if __name__ == '__main__':
 
     _, md = yap.yap_joint_api(tok_str)
     
+    md['TOKEN'] = md['TOKEN'].astype(str)
+    
+    with open('utils_eval_files/yap_morph_dev_tokens.txt', 'w') as w:
+        w.write('\n\n'.join(md.groupby('SENTNUM')['TOKEN'].agg('\n'.join)))
+    
     md['FORM'] = md['FORM'].apply(lambda x: x + ' O')
-
 
     with open('utils_eval_files/yap_morph_dev.txt', 'w') as w:
         w.write('\n\n'.join(md.groupby('SENTNUM')['FORM'].agg('\n'.join)))
