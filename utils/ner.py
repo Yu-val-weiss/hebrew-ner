@@ -2,10 +2,12 @@
 # @Author: Yuval Weiss
 import re
 import string
+import time
 from typing import Callable, Iterable, List, NamedTuple, Tuple
 
 import utils.yap as yap
 import pandas as pd
+from utils.eval.consts import MORPH, MULTI, TOK
 
 class WordLabel(NamedTuple):
     word: str
@@ -79,6 +81,37 @@ def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' '
     )
     
 
+def read_token_origins_to_df(file: str, comment_delim='#'):
+    '''
+    Reads a file of sentences, with each word NER labelled into a pandas dataframe
+    
+    Note: Yap assigns 1-based indices, so will subtract 1 here 
+    
+    Columns: `['SentNum', 'WordIndex' 'Origin']` 
+    
+    Can use `r.groupby('SentNum').agg(list)` to get them aggregated into sentences
+    '''
+    def sent_iter():
+        curr_sent = 0
+        word_ind = 0
+        with open(file, encoding="utf-8") as f:
+            for l in f:
+                if l.startswith(comment_delim):
+                    continue
+                if l := l.strip():
+                    yield [curr_sent, word_ind, int(l) - 1]
+                    word_ind += 1
+                else:
+                    curr_sent += 1
+                    word_ind = 0
+      
+    columns = ['SentNum', 'WordIndex', 'Origin'] 
+                
+    return pd.DataFrame(
+        data = sent_iter(),
+        columns = columns
+    )
+
 def merge_morph_from_multi_spliting(morph: pd.DataFrame, multi: pd.DataFrame, multi_label_delim='^', validate_to_single=False):
     '''
     Merges morphological-based predictions based on the splitting in the multi model. Validates to a single token if `validate_to_single` is `True`.
@@ -106,6 +139,23 @@ def merge_morph_from_multi_spliting(morph: pd.DataFrame, multi: pd.DataFrame, mu
         data = merge_morphs(),
         columns = columns,
     )
+    
+def merge_morph_from_token_origins(morph: pd.DataFrame, origins: pd.DataFrame, multi_label_delim='^', validate_to_single=False):
+    '''
+    Merges morphological-based predictions based on the splitting from the yap request's token origins. Validates to a single token if `validate_to_single` is `True`.
+    '''
+    df = (pd
+            .merge(morph, origins, on=['SentNum', 'WordIndex'])
+            .drop('WordIndex', axis='columns')
+            .groupby(['SentNum', 'Origin'])
+            .agg(multi_label_delim.join)
+            .reset_index()
+            .rename(columns={'Origin': 'WordIndex'}))
+    
+    if validate_to_single:
+        df['Label'] = df['Label'].apply(lambda x: validate_multi_to_single(x, multi_label_delim)[0])
+        
+    return df
 
 def make_multi_splitting_df(multi: pd.DataFrame, multi_label_delim='^'):
     '''
@@ -490,38 +540,35 @@ def raw_toks_str_from_ner_df(df: pd.DataFrame) -> str:
             .agg('\n'.join)) + '\n\n'
     
 if __name__ == '__main__':
-    MORPH = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/morph_gold_dev.bmes"
-    MULTI = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-multi_gold_dev.bmes"
-    TOK = "/Users/yuval/GitHub/NEMO-Corpus/data/spmrl/gold/token-single_gold_dev.bmes"
-    
     PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50.txt'
+    
+    YAP_MORPH = '/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_morph_dev.txt'
     
     morph = read_file_to_sentences_df(MORPH)
     pred_morph = read_file_to_sentences_df(PRED_MORPH)
     multi = read_file_to_sentences_df(MULTI)
     tok = read_file_to_sentences_df(TOK)
     
-    # evaluate_morpheme(PRED_MORPH, MORPH, MULTI)
+    yap_morph = read_file_to_sentences_df(YAP_MORPH)
     
-    # pred_multi = read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/tok_multi_cnn.txt')
-    # evaluate_token_ner(pred_multi['Label'].to_list(), multi['Label'].to_list(), multi_tok=True)
-    # # print(pred_morph['Label'].dtype)
+    # print(merge_morph_from_multi_spliting(yap_morph, multi))
     
-    # print("Morph to morph")
-    # evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
+    ORIGINS = '/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_morph_dev_tokens.txt'
     
-    # merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True)
-    
-    # print("Morph to single")
-    # evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
-    # full_ma = yap.yap_ma_api(raw_toks_str_from_ner_df(tok))
-    
-    tok_str = raw_toks_str_from_ner_df(tok[tok['SentNum']])
-    
-    _, md = yap.yap_joint_api(tok_str)
+    origins = read_token_origins_to_df(ORIGINS)
     
     
-    with open('utils_eval_files/yap_morph_dev.txt', 'w') as w:
-        w.write('\n\n'.join(md.groupby('SENTNUM')['FORM'].agg('\n'.join)))
+    # for x,y in splitting_sents:
+    #     for z in y:
+    #         print(z)
+        # print(y)
     
-    # print(raw_toks)
+    now = time.time()
+    
+    print(merge_morph_from_token_origins(yap_morph, origins, validate_to_single=False))
+    
+    print(f"Took {time.time() - now}")
+    
+  
+    # print(read_file_to_sentences_df(YAP_MORPH))
+    
