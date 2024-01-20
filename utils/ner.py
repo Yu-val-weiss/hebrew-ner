@@ -524,12 +524,15 @@ def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], mult
     
     
 def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.DataFrame, tok: pd.DataFrame, multi_label_delim = '^'):
+    '''
+    Evaluates morph to morph and morph to single
+    '''
     print("Morph to morph")
     m_to_m = evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
     
     merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True, multi_label_delim=multi_label_delim)
     
-    print("Morph to single")
+    print("\nMorph to single")
     m_to_multi = evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
     
     return m_to_m, m_to_multi
@@ -542,7 +545,7 @@ def raw_toks_str_from_ner_df(df: pd.DataFrame) -> str:
 if __name__ == '__main__':
     PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50.txt'
     
-    YAP_MORPH = '/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_morph_dev.txt'
+    YAP_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50_yap.txt'
     
     morph = read_file_to_sentences_df(MORPH)
     pred_morph = read_file_to_sentences_df(PRED_MORPH)
@@ -563,12 +566,7 @@ if __name__ == '__main__':
     #         print(z)
         # print(y)
     
-    now = time.time()
-    
-    print(merge_morph_from_token_origins(yap_morph, origins, validate_to_single=False))
-    
-    print(f"Took {time.time() - now}")
-    
+    print(merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True))
   
     # print(read_file_to_sentences_df(YAP_MORPH))
     
