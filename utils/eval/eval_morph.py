@@ -11,6 +11,8 @@ if __name__ == '__main__':
     
     print('\n\nYAP MORPH')
     
+    tok = tok.groupby('SentNum')['Label'].agg(list).to_list()
+    
     print('PURE YAP')
     
     ORIGINS = '/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_morph_dev_tokens.txt'
@@ -19,28 +21,24 @@ if __name__ == '__main__':
     yap_morph = ner.read_file_to_sentences_df(YAP_MORPH)
     origins = ner.read_token_origins_to_df(ORIGINS)
     
-    merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True)
+    merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True).groupby('SentNum')['Label'].agg(list).to_list()
 
-    ner.evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    ner.evaluate_token_ner_nested(merged, tok)
     
     print('\nHYBRID + PRED MULTI')
     
     yap_morph = ner.read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50_yap_hybrid_pred_multi.txt')
     origins = ner.read_token_origins_to_df('/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_hybrid_pred_multi_dev_tokens.txt')
     
-    merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True)
+    merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True).groupby('SentNum')['Label'].agg(list).to_list()
 
-    ner.evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    ner.evaluate_token_ner_nested(merged, tok)
     
     print('\nHYBRID + GOLD MULTI')
     
     yap_morph = ner.read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50_yap_hybrid_gold_multi.txt')
     origins = ner.read_token_origins_to_df('/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_hybrid_gold_multi_dev_tokens.txt')
     
-    merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True)
-    
-    print(merged[(x := (merged['Label'] != tok['Label']))])
-    
-    print(tok[x])
+    merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True).groupby('SentNum')['Label'].agg(list).to_list()
 
-    ner.evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    ner.evaluate_token_ner_nested(merged, tok)
