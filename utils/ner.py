@@ -5,7 +5,7 @@ import string
 import time
 from typing import Callable, Iterable, List, NamedTuple, Tuple
 
-import utils.yap as yap
+from utils import yap
 import pandas as pd
 from utils.eval.consts import MORPH, MULTI, TOK
 

@@ -1,5 +1,4 @@
-import utils.ner as ner
-import utils.yap as yap
+from utils import ner, yap
 from utils.eval.consts import TOK
 
 if __name__ == '__main__':
