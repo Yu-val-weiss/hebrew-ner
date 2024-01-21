@@ -5,8 +5,6 @@ import requests
 import pandas as pd
 from types import SimpleNamespace
 
-from utils import hebrew
-
 YAP_PATH = "http://localhost:8000/yap/heb"
 LATTICE_COLUMNS = ['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']
 '''
@@ -52,8 +50,6 @@ def yap_joint_api(text: str):
     '''
     text = text.strip() + '  ' # need 2 spaces at end
     # NOTE: for multiple sentences, need double space or \n after full stop.
-    
-    text = hebrew.quotes_to_gershayim(text)
     
     payload = {"text": text}
     headers = {"content-type": "application/json"}
@@ -122,8 +118,6 @@ def yap_ma_api(text: str):
     text = text.strip() + '  ' # need 2 spaces at end
     # NOTE: for multiple sentences, need double space or \n after full stop.
     
-    text = hebrew.quotes_to_gershayim(text)
-    
     payload = {"text": text}
     headers = {"content-type": "application/json"}
 
@@ -152,7 +146,7 @@ def make_data_frame_from_yap_str(df_str: str, columns: List[str]=LATTICE_COLUMNS
         TOKEN: Source token index
     '''
     dfs = []
-    for sent_num, df_s in enumerate(hebrew.gershayim_to_quotes(df_str).strip().split('\n\n')):
+    for sent_num, df_s in enumerate(df_str.strip().split('\n\n')):
         dt_df = pd.DataFrame(
             columns=columns, 
             data=(([sent_num] + l.split('\t')) for l in df_s.strip().split("\n"))
@@ -178,7 +172,7 @@ def lattice_df_to_yap_str(lattice: pd.DataFrame):
          .to_csv(header=False, index=False, sep='\t')
          for _, df
          in lattice.groupby('SENTNUM')]
-    return hebrew.quotes_to_gershayim('\n\n'.join(x).strip() + '\n\n')
+    return '\n\n'.join(x).strip() + '\n\n' 
 
 
 
@@ -186,9 +180,9 @@ if __name__ == '__main__':
     s = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  "
     s2 = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  גנו גידל דגן בגן .  "
     ganan = "גנן גידל דגן בגן .  "
-    s3 = 'סמנכ"ל'
     # ma, md =  yap_joint_api(s2)
-    ma, md = yap_joint_api(s3)
-    print(ma)
-    print(md)
+    _, md = yap_joint_api(s2)
+    md = md.groupby('SENTNUM')['FORM'].agg('\n'.join)
+    with open('test.txt', 'w') as w:
+        w.write('\n\n'.join(md) + '\n\n')
     
