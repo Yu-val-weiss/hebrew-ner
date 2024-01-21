@@ -1,10 +1,13 @@
+import re
+
 def quotes_to_gershayim(s: str): 
     '''
     Hebrew can sometimes use gershayim, ״ when meaning to use quotes, especially for acronyms.
     
     Yap seems to accept these better.
     '''
-    return s.replace('"', '״')
+    sub = re.compile(r'"')
+    return sub.sub('״', s)
 
 def gershayim_to_quotes(s: str):
     '''
@@ -12,4 +15,5 @@ def gershayim_to_quotes(s: str):
     
     This function normalises backs to quotes.
     '''
-    return s.replace('״', '"')
+    sub = re.compile(r'״')
+    return sub.sub('"', s)
