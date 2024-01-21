@@ -1,3 +1,4 @@
+import pandas as pd
 from utils.eval.consts import MORPH, MULTI, TOK
 from utils import ner
 
@@ -11,7 +12,7 @@ if __name__ == '__main__':
     
     print('\n\nYAP MORPH')
     
-    tok = tok.groupby('SentNum')['Label'].agg(list).to_list()
+    tok_grouped = tok.groupby('SentNum')['Label'].agg(list).to_list()
     
     print('PURE YAP')
     
@@ -23,7 +24,7 @@ if __name__ == '__main__':
     
     merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True).groupby('SentNum')['Label'].agg(list).to_list()
 
-    ner.evaluate_token_ner_nested(merged, tok)
+    ner.evaluate_token_ner_nested(merged, tok_grouped)
     
     print('\nHYBRID + PRED MULTI')
     
@@ -32,13 +33,19 @@ if __name__ == '__main__':
     
     merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True).groupby('SentNum')['Label'].agg(list).to_list()
 
-    ner.evaluate_token_ner_nested(merged, tok)
+    ner.evaluate_token_ner_nested(merged, tok_grouped)
     
     print('\nHYBRID + GOLD MULTI')
     
     yap_morph = ner.read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50_yap_hybrid_gold_multi.txt')
     origins = ner.read_token_origins_to_df('/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_hybrid_gold_multi_dev_tokens.txt')
     
-    merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True).groupby('SentNum')['Label'].agg(list).to_list()
+    merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True)
+    
+    p = pd.merge(merged, tok, on=['SentNum', 'WordIndex'])
+    
+    print(p[p['Label_x'] != p['Label_y']])
+    
+    merged = merged.groupby('SentNum')['Label'].agg(list).to_list()
 
-    ner.evaluate_token_ner_nested(merged, tok)
+    ner.evaluate_token_ner_nested(merged, tok_grouped)
