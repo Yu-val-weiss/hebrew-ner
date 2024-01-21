@@ -55,6 +55,7 @@ class YapGraph:
     def get_all_paths(self, start: int, end: int, limit=math.inf):
         '''
         Returns an iterator over all paths, each of which is a list of ints, using the iterator version of DFS.
+        Source: Wikipedia
         '''
         path = [start]
         s = [self.adj(start)]
