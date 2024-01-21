@@ -1,21 +1,23 @@
 import time
-import utils.yap as yap
+from typing import Set, Tuple
+from utils import yap, ner
 from utils.yap_graph import YapGraph
-import utils.ner as ner
 import pandas as pd
 
-def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label_delim='^'):
+def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label_delim='^', fallback=False):
     splitting = ner.make_multi_splitting_df(multi_df, multi_label_delim)
-    valid_edges = set()
+    valid_edges: Set[Tuple[int, int, int, int]] = set()
     for ((sent_id, tok_id), sub_lattice),(_, split) in zip(lattice_df.groupby(['SENTNUM', 'TOKEN']), splitting.groupby(['SentNum', 'WordIndex'])):
         # tok_id in lattice starts from 1, so may need to offset
         g = YapGraph.from_df(sub_lattice)
         source, target = sub_lattice['FROM'].iat[0], sub_lattice['TO'].iat[-1]
         path_len = split['Splitting'].iat[0] + 1
         paths = list(g.get_all_paths(source, target, limit=path_len))
-        filtered_paths = [p for p in paths if len(p) == path_len]
-        if filtered_paths != []:
-            paths = filtered_paths
+        pruned_paths = [p for p in paths if len(p) == path_len]
+        if fallback and len(pruned_paths) == 0:
+            pruned_paths = [p for p in paths if abs(len(p) - path_len) <= 1]
+        if len(pruned_paths) > 0:
+            paths = pruned_paths
         for p in paths:
             for f, t in zip(p[:-1], p[1:]):
                 valid_edges.add((sent_id, tok_id, f, t))
@@ -35,6 +37,7 @@ if __name__ == '__main__':
     pred_morph = ner.read_file_to_sentences_df(PRED_MORPH)
     multi = ner.read_file_to_sentences_df(MULTI)
     tok = ner.read_file_to_sentences_df(TOK)
+    tok = tok[tok['SentNum'] < 1000]
     
     multi_test = ner.read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/scratch/test.txt')
     
@@ -53,6 +56,27 @@ if __name__ == '__main__':
     
     print("Pruning complete")
     
+    
+    print("Gold morph + fallback")
+
+    ma = yap.yap_ma_api(ner.raw_toks_str_from_ner_df(tok))
+    
+    print(ma)
+    
+    pruned = prune_lattices(ma, multi, fallback=True)
+    
+    md = yap.yap_joint_from_lattice_api(pruned)
+    
+    md['TOKEN'] = md['TOKEN'].astype(str)
+    
+    with open('utils_eval_files/yap_hybrid_gold_multi_fallback_dev_tokens.txt', 'w') as w:
+        w.write('\n\n'.join(md.groupby('SENTNUM')['TOKEN'].agg('\n'.join)))
+    
+    md['FORM'] = md['FORM'].apply(lambda x: x + ' O')
+
+    with open('utils_eval_files/yap_hybrid_gold_multi_fallback_dev.txt', 'w') as w:
+        w.write('\n\n'.join(md.groupby('SENTNUM')['FORM'].agg('\n'.join)))
+    
     # print("Disambiguating lattices...")
     
     # s = time.time()
@@ -61,13 +85,13 @@ if __name__ == '__main__':
     
     # print("Unpruned took", time.time() - s)
     
-    print("Dismabiguating pruned lattice...")
+    # print("Dismabiguating pruned lattice...")
     
-    s = time.time()
+    # now = time.time()
     
-    print(yap.yap_joint_from_lattice_api(x))
+    # print(yap.yap_joint_from_lattice_api(x))
     
-    print("Pruned took", time.time() - s)
+    # print("Pruned took", time.time() - now)
     
     # md = yap.yap_joint_from_lattice_api(x)
     
