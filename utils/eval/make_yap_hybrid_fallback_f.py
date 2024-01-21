@@ -1,5 +1,4 @@
-import utils.ner as ner
-import utils.yap as yap
+from utils import ner, yap
 from utils.eval.consts import TOK, MULTI
 from ner_main import prune_lattices
 
@@ -12,9 +11,9 @@ if __name__ == '__main__':
         
     tok_str = ner.raw_toks_str_from_ner_df(tok)
     
-    print("Gold morph w/ fallback")
-
     ma = yap.yap_ma_api(tok_str)
+    
+    print("Gold morph w/ fallback")
     
     pruned = prune_lattices(ma, multi, fallback=True)
     
@@ -32,7 +31,7 @@ if __name__ == '__main__':
 
     print("Pred morph w/ fallback")
     
-    pruned = prune_lattices(ma, multi, fallback=True)
+    pruned = prune_lattices(ma, pred_multi, fallback=True)
     
     md = yap.yap_joint_from_lattice_api(pruned)
     
