@@ -42,10 +42,6 @@ if __name__ == '__main__':
     
     merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True)
     
-    p = pd.merge(merged, tok, on=['SentNum', 'WordIndex'])
-    
-    print(p[p['Label_x'] != p['Label_y']])
-    
     merged = merged.groupby('SentNum')['Label'].agg(list).to_list()
 
     ner.evaluate_token_ner_nested(merged, tok_grouped)
