@@ -208,9 +208,12 @@ def build_pretrain_embedding_fasttext(embedding_path, word_alphabet, embedd_dim=
 
 
 def load_fasttext_model(embedding_path, embedd_dim=300):
+    print("Loading fastText model...")
     ft = fasttext.load_model(embedding_path)
-    if ft.get_dimension() != embedd_dim:
+    print("...loaded!")
+    if (dim := ft.get_dimension()) != embedd_dim:
         fasttext.util.reduce_model(ft, embedd_dim)
+        print(f"Reduced dimension from {dim} to {embedd_dim}.")
     return ft
 
 def norm2one(vec):
