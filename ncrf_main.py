@@ -28,7 +28,7 @@ torch.manual_seed(seed_num)
 np.random.seed(seed_num)
 
 
-def data_initialization(data):
+def data_initialization(data: Data):
     data.initial_feature_alphabets()
     data.build_alphabet(data.train_dir)
     data.build_alphabet(data.dev_dir)
@@ -349,7 +349,7 @@ def batchify_sentence_classification_with_label(input_batch_list, gpu, if_train=
 
 
 
-def train(data):
+def train(data: Data):
     print("Training model...")
     data.show_data_summary()
     save_data_name = data.model_dir +".dset"
