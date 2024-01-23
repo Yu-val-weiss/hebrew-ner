@@ -61,7 +61,8 @@ class WordRep(nn.Module):
 
         if self.gpu:
             self.drop = self.drop.cuda()
-            self.word_embedding = self.word_embedding.cuda()
+            if not self.use_fasttext_as_model:
+                self.word_embedding = self.word_embedding.cuda()
             for idx in range(self.feature_num):
                 self.feature_embeddings[idx] = self.feature_embeddings[idx].cuda()
 
