@@ -100,8 +100,6 @@ def read_instance(input_file, word_alphabet, char_alphabet, feature_alphabets, l
             if len(line) > 2:
                 pairs = line.strip().split()
                 word = pairs[0]
-                if sys.version_info[0] < 3:
-                    word = word.decode('utf-8')
                 words.append(word)
                 if number_normalized:
                     word = normalize_word(word)
@@ -203,7 +201,7 @@ def build_pretrain_embedding_fasttext(embedding_path, word_alphabet, embedd_dim=
             pretrain_emb[index,:] = norm2one(ft.get_word_vector(word))
         else:
             pretrain_emb[index,:] = ft.get_word_vector(word)
-    print("Embedding:\n     used fastText model so OOV words are actually evaluated, not random")
+    print("Embedding:\n     used fastText model statically to create a word vector file")
     return pretrain_emb, embedd_dim
 
 

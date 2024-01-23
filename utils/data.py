@@ -64,6 +64,7 @@ class Data:
         self.pretrain_char_embedding = None
         self.pretrain_feature_embeddings = []
         self.use_fasttext = False # new line
+        self.use_fasttext_as_model = False
         self.fasttext_model = None
 
         self.label_size = 0
@@ -425,6 +426,9 @@ class Data:
         the_item = 'use_fasttext'
         if the_item in config:
             self.use_fasttext = str2bool(config[the_item])
+        the_item = 'use_fasttext_as_model'
+        if the_item in config:
+            self.use_fasttext_as_model = str2bool(config[the_item])
         the_item = 'char_emb_dir'
         if the_item in config:
             self.char_emb_dir = config[the_item]
