@@ -399,7 +399,7 @@ def train(data: Data):
         whole_token = 0
         random.shuffle(data.train_Ids)
         if data.use_fasttext_as_model:
-            print("Shuffled")
+            print("Shuffle: not showing indices as already embedded.")
         else:
             print("Shuffle: first input word list:", data.train_Ids[0][0])
         ## set model in train model
