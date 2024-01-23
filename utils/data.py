@@ -373,7 +373,8 @@ class Data:
         if self.decode_dir is None:
             raise Exception('No decode dir')
         if not os.path.exists(self.decode_dir):
-            os.makedirs(self.decode_dir, exist_ok=True) 
+            dec_dir, _ = os.path.split(self.decode_dir)
+            os.makedirs(dec_dir, exist_ok=True) 
             print(f"Created decode dir: {self.decode_dir}")
         fout = open(self.decode_dir,'w')
         sent_num = len(predict_results)
