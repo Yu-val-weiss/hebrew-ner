@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import fasttext
 import fasttext.util
+from typing import Union
 
 def normalize_word(word):
     new_word = ""
@@ -18,7 +19,7 @@ def normalize_word(word):
     return new_word
 
 
-def read_instance(input_file, word_alphabet, char_alphabet, feature_alphabets, label_alphabet, number_normalized, max_sent_length, sentence_classification=False, split_token='\t', char_padding_size=-1, char_padding_symbol = '</pad>'):
+def read_instance(input_file, word_alphabet, char_alphabet, feature_alphabets, label_alphabet, number_normalized, max_sent_length, sentence_classification=False, split_token='\t', char_padding_size=-1, char_padding_symbol = '</pad>', fasttext: Union[None, fasttext.FastText._FastText] = None):
     feature_num = len(feature_alphabets)
     in_lines = open(input_file,'r', encoding="utf8").readlines()
     instence_texts = []
@@ -38,14 +39,15 @@ def read_instance(input_file, word_alphabet, char_alphabet, feature_alphabets, l
             if len(line) > 2:
                 pairs = line.strip().split(split_token)
                 sent = pairs[0]
-                if sys.version_info[0] < 3:
-                    sent = sent.decode('utf-8')
                 original_words = sent.split()
                 for word in original_words:
                     words.append(word)
                     if number_normalized:
                         word = normalize_word(word)
-                    word_Ids.append(word_alphabet.get_index(word))
+                    if fasttext is not None:
+                        word_Ids.append(fasttext.get_word_vector(word))
+                    else:
+                        word_Ids.append(word_alphabet.get_index(word))
                     ## get char
                     char_list = []
                     char_Id = []
@@ -105,7 +107,10 @@ def read_instance(input_file, word_alphabet, char_alphabet, feature_alphabets, l
                     word = normalize_word(word)
                 label = pairs[-1]
                 labels.append(label)
-                word_Ids.append(word_alphabet.get_index(word))
+                if fasttext is not None:
+                    word_Ids.append(fasttext.get_word_vector(word))
+                else:
+                    word_Ids.append(word_alphabet.get_index(word))
                 label_Ids.append(label_alphabet.get_index(label))
                 ## get features
                 feat_list = []
@@ -191,11 +196,7 @@ def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm
 
 
 def build_pretrain_embedding_fasttext(embedding_path, word_alphabet, embedd_dim=100, norm=True):
-    if embedding_path != None:
-        ft = fasttext.load_model(embedding_path)
-        if ft.get_dimension() != embedd_dim:
-            fasttext.util.reduce_model(ft, embedd_dim)
-            
+    ft = build_fasttext_model(embedding_path, embedd_dim)
     pretrain_emb = np.empty([word_alphabet.size(), embedd_dim])
     for word, index in word_alphabet.iteritems():
         if norm:
@@ -204,6 +205,13 @@ def build_pretrain_embedding_fasttext(embedding_path, word_alphabet, embedd_dim=
             pretrain_emb[index,:] = ft.get_word_vector(word)
     print("Embedding:\n     used fastText model so OOV words are actually evaluated, not random")
     return pretrain_emb, embedd_dim
+
+
+def build_fasttext_model(embedding_path, embedd_dim=300):
+    ft = fasttext.load_model(embedding_path)
+    if ft.get_dimension() != embedd_dim:
+        fasttext.util.reduce_model(ft, embedd_dim)
+    return ft
 
 def norm2one(vec):
     root_sum_square = np.sqrt(np.sum(np.square(vec)))

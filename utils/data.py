@@ -64,6 +64,7 @@ class Data:
         self.pretrain_char_embedding = None
         self.pretrain_feature_embeddings = []
         self.use_fasttext = False # new line
+        self.fasttext_model = None
 
         self.label_size = 0
         self.word_alphabet_size = 0
