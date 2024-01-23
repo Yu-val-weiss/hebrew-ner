@@ -194,7 +194,7 @@ def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm
 
 
 def build_pretrain_embedding_fasttext(embedding_path, word_alphabet, embedd_dim=100, norm=True):
-    ft = build_fasttext_model(embedding_path, embedd_dim)
+    ft = load_fasttext_model(embedding_path, embedd_dim)
     pretrain_emb = np.empty([word_alphabet.size(), embedd_dim])
     for word, index in word_alphabet.iteritems():
         if norm:
@@ -205,7 +205,7 @@ def build_pretrain_embedding_fasttext(embedding_path, word_alphabet, embedd_dim=
     return pretrain_emb, embedd_dim
 
 
-def build_fasttext_model(embedding_path, embedd_dim=300):
+def load_fasttext_model(embedding_path, embedd_dim=300):
     ft = fasttext.load_model(embedding_path)
     if ft.get_dimension() != embedd_dim:
         fasttext.util.reduce_model(ft, embedd_dim)
