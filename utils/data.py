@@ -3,6 +3,7 @@
 # @Date:   2017-06-14 17:34:32
 # @Last Modified by: Yuval Weiss
 # @Last Modified time: 2023-10-22 19:10:11
+import os
 import sys
 from .alphabet import Alphabet
 from .functions import *
@@ -369,6 +370,11 @@ class Data:
     def write_nbest_decoded_results(self, predict_results, pred_scores, name):
         ## predict_results : [whole_sent_num, nbest, each_sent_length]
         ## pred_scores: [whole_sent_num, nbest]
+        if self.decode_dir is None:
+            raise Exception('No decode dir')
+        if not os.path.exists(self.decode_dir):
+            os.makedirs(self.decode_dir, exist_ok=True) 
+            print(f"Created decode dir: {self.decode_dir}")
         fout = open(self.decode_dir,'w')
         sent_num = len(predict_results)
         content_list = []
