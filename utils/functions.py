@@ -9,6 +9,8 @@ import fasttext
 import fasttext.util
 from typing import Union
 
+fasttext.FastText.eprint = lambda _: None # patch to prevent annoying warning messages about load_model
+
 def normalize_word(word):
     new_word = ""
     for char in word:
