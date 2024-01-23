@@ -28,12 +28,13 @@ torch.manual_seed(seed_num)
 np.random.seed(seed_num)
 
 
-def data_initialization(data):
+def data_initialization(data: Data):
     data.initial_feature_alphabets()
     data.build_alphabet(data.train_dir)
     data.build_alphabet(data.dev_dir)
     data.build_alphabet(data.test_dir)
     data.fix_alphabet()
+    data.build_fasttext_model(data.use_fasttext_as_model, data.word_emb_dir, data.word_emb_dim)
 
 
 def predict_check(pred_variable, gold_variable, mask_variable, sentence_classification=False):
@@ -129,7 +130,7 @@ def lr_decay(optimizer, epoch, decay_rate, init_lr):
 
 
 
-def evaluate(data, model, name, nbest=None):
+def evaluate(data: Data, model, name, nbest=None):
     if name == "train":
         instances = data.train_Ids
     elif name == "dev":
@@ -161,7 +162,7 @@ def evaluate(data, model, name, nbest=None):
         instance = instances[start:end]
         if not instance:
             continue
-        batch_word, batch_features, batch_wordlen, batch_wordrecover, batch_char, batch_charlen, batch_charrecover, batch_label, mask  = batchify_with_label(instance, data.HP_gpu, False, data.sentence_classification)
+        batch_word, batch_features, batch_wordlen, batch_wordrecover, batch_char, batch_charlen, batch_charrecover, batch_label, mask  = batchify_with_label(instance, data.HP_gpu, False, data.sentence_classification, using_fasttext_model=data.use_fasttext_as_model)
         if nbest and not data.sentence_classification:
             scores, nbest_tag_seq = model.decode_nbest(batch_word,batch_features, batch_wordlen, batch_char, batch_charlen, batch_charrecover, mask, nbest)
             nbest_pred_result = recover_nbest_label(nbest_tag_seq, mask, data.label_alphabet, batch_wordrecover)
@@ -183,14 +184,14 @@ def evaluate(data, model, name, nbest=None):
     return speed, acc, p, r, f, pred_results, pred_scores
 
 
-def batchify_with_label(input_batch_list, gpu, if_train=True, sentence_classification=False):
+def batchify_with_label(input_batch_list, gpu, if_train=True, sentence_classification=False, using_fasttext_model=False):
     if sentence_classification:
         return batchify_sentence_classification_with_label(input_batch_list, gpu, if_train)
     else:
-        return batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train)
+        return batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train, using_fasttext_model=using_fasttext_model)
 
 
-def batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train=True):
+def batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train=True, using_fasttext_model=False):
     """
         input: list of words, chars and labels, various length. [[words, features, chars, labels],[words, features, chars,labels],...]
             words: word ids for one sentence. (batch_size, sent_len)
@@ -210,14 +211,20 @@ def batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train=True):
             mask: (batch_size, max_sent_len)
     """
     batch_size = len(input_batch_list)
-    words = [sent[0] for sent in input_batch_list]
+    if using_fasttext_model:
+        words = [np.array(sent[0]) for sent in input_batch_list]
+    else:
+        words = [sent[0] for sent in input_batch_list]
     features = [np.asarray(sent[1]) for sent in input_batch_list]
     feature_num = len(features[0][0])
     chars = [sent[2] for sent in input_batch_list]
     labels = [sent[3] for sent in input_batch_list]
     word_seq_lengths = torch.LongTensor(list(map(len, words)))
     max_seq_len = word_seq_lengths.max().item()
-    word_seq_tensor = torch.zeros((batch_size, max_seq_len), requires_grad =  if_train).long()
+    if using_fasttext_model:
+        word_seq_tensor: torch.Tensor = torch.zeros((batch_size, max_seq_len, words[0].shape[-1]), requires_grad=if_train)
+    else:
+        word_seq_tensor: torch.Tensor = torch.zeros((batch_size, max_seq_len), requires_grad =  if_train).long()
     label_seq_tensor = torch.zeros((batch_size, max_seq_len), requires_grad =  if_train).long()
     feature_seq_tensors = []
     for idx in range(feature_num):
@@ -225,7 +232,10 @@ def batchify_sequence_labeling_with_label(input_batch_list, gpu, if_train=True):
     mask = torch.zeros((batch_size, max_seq_len), requires_grad =  if_train).bool()
     for idx, (seq, label, seqlen) in enumerate(zip(words, labels, word_seq_lengths)):
         seqlen = seqlen.item()
-        word_seq_tensor[idx, :seqlen] = torch.LongTensor(seq)
+        if using_fasttext_model:
+            word_seq_tensor.data[idx, :seqlen] = torch.tensor(seq).clone()
+        else:
+            word_seq_tensor[idx, :seqlen] = torch.LongTensor(seq)
         label_seq_tensor[idx, :seqlen] = torch.LongTensor(label)
         mask[idx, :seqlen] = torch.Tensor([1]*seqlen)
         for idy in range(feature_num):
@@ -349,7 +359,7 @@ def batchify_sentence_classification_with_label(input_batch_list, gpu, if_train=
 
 
 
-def train(data):
+def train(data: Data):
     print("Training model...")
     data.show_data_summary()
     save_data_name = data.model_dir +".dset"
@@ -388,7 +398,10 @@ def train(data):
         right_token = 0
         whole_token = 0
         random.shuffle(data.train_Ids)
-        print("Shuffle: first input word list:", data.train_Ids[0][0])
+        if data.use_fasttext_as_model:
+            print("Shuffle: not showing indices as already embedded.")
+        else:
+            print("Shuffle: first input word list:", data.train_Ids[0][0])
         ## set model in train model
         model.train()
         model.zero_grad()
@@ -404,7 +417,7 @@ def train(data):
             instance = data.train_Ids[start:end]
             if not instance:
                 continue
-            batch_word, batch_features, batch_wordlen, batch_wordrecover, batch_char, batch_charlen, batch_charrecover, batch_label, mask  = batchify_with_label(instance, data.HP_gpu, True, data.sentence_classification)
+            batch_word, batch_features, batch_wordlen, batch_wordrecover, batch_char, batch_charlen, batch_charrecover, batch_label, mask  = batchify_with_label(instance, data.HP_gpu, True, data.sentence_classification, using_fasttext_model=data.use_fasttext_as_model)
             instance_count += 1
             loss, tag_seq = model.calculate_loss(batch_word, batch_features, batch_wordlen, batch_char, batch_charlen, batch_charrecover, batch_label, mask)
             right, whole = predict_check(tag_seq, batch_label, mask, data.sentence_classification)
