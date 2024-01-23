@@ -3,6 +3,7 @@
 # @Date:   2017-06-14 17:34:32
 # @Last Modified by: Yuval Weiss
 # @Last Modified time: 2023-10-22 19:10:11
+import os
 import sys
 from .alphabet import Alphabet
 from .functions import *
@@ -64,6 +65,8 @@ class Data:
         self.pretrain_char_embedding = None
         self.pretrain_feature_embeddings = []
         self.use_fasttext = False # new line
+        self.use_fasttext_as_model = False
+        self.fasttext_model = None
 
         self.label_size = 0
         self.word_alphabet_size = 0
@@ -145,6 +148,8 @@ class Data:
             print("         Fe: %s  embedding  dir: %s"%(self.feature_alphabets[idx].name, self.feature_emb_dirs[idx]))
             print("         Fe: %s  embedding size: %s"%(self.feature_alphabets[idx].name, self.feature_emb_dims[idx]))
             print("         Fe: %s  norm       emb: %s"%(self.feature_alphabets[idx].name, self.norm_feature_embs[idx]))
+        if self.use_fasttext_as_model:
+            print(f"     Using fasttext as dynamic model. Embedding dim: {self.fasttext_model.get_dimension()}")
         print(" "+"++"*20)
         print(" Model Network:")
         print("     Model        use_crf: %s"%(self.use_crf))
@@ -206,6 +211,9 @@ class Data:
                     self.norm_feature_embs[idx] = self.feat_config[self.feature_name[idx]]['emb_norm']
         # exit(0)
 
+    def build_fasttext_model(self, use_fasttext_as_model: bool, word_emb_dir: str, emb_dim: int):
+        if use_fasttext_as_model:
+            self.fasttext_model = load_fasttext_model(word_emb_dir, emb_dim)
 
     def build_alphabet(self, input_file):
         in_lines = open(input_file,'r').readlines()
@@ -241,7 +249,8 @@ class Data:
                         word = normalize_word(word)
                     label = pairs[-1]
                     self.label_alphabet.add(label)
-                    self.word_alphabet.add(word)
+                    if not self.use_fasttext_as_model:
+                        self.word_alphabet.add(word)
                     ## build feature alphabet
                     for idx in range(self.feature_num):
                         feat_idx = pairs[idx+1].split(']',1)[-1]
@@ -278,13 +287,14 @@ class Data:
 
 
     def build_pretrain_emb(self):
-        if self.word_emb_dir:
-            if self.use_fasttext:
-                print("Load fasttext model for embedding, norm: %s, dir: %s"%(self.norm_word_emb, self.word_emb_dir))
-                self.pretrain_word_embedding, self.word_emb_dim = build_pretrain_embedding_fasttext(self.word_emb_dir, self.word_alphabet, self.word_emb_dim, self.norm_word_emb)
-            else:
-                print("Load pretrained word embedding, norm: %s, dir: %s"%(self.norm_word_emb, self.word_emb_dir))
-                self.pretrain_word_embedding, self.word_emb_dim = build_pretrain_embedding(self.word_emb_dir, self.word_alphabet, self.word_emb_dim, self.norm_word_emb)
+        if not self.use_fasttext_as_model:
+            if self.word_emb_dir:
+                if self.use_fasttext:
+                    print("Load fasttext model for embedding, norm: %s, dir: %s"%(self.norm_word_emb, self.word_emb_dir))
+                    self.pretrain_word_embedding, self.word_emb_dim = build_pretrain_embedding_fasttext(self.word_emb_dir, self.word_alphabet, self.word_emb_dim, self.norm_word_emb)
+                else:
+                    print("Load pretrained word embedding, norm: %s, dir: %s"%(self.norm_word_emb, self.word_emb_dir))
+                    self.pretrain_word_embedding, self.word_emb_dim = build_pretrain_embedding(self.word_emb_dir, self.word_alphabet, self.word_emb_dim, self.norm_word_emb)
         if self.char_emb_dir:
             print("Load pretrained char embedding, norm: %s, dir: %s"%(self.norm_char_emb, self.char_emb_dir))
             self.pretrain_char_embedding, self.char_emb_dim = build_pretrain_embedding(self.char_emb_dir, self.char_alphabet, self.char_emb_dim, self.norm_char_emb)
@@ -297,13 +307,13 @@ class Data:
     def generate_instance(self, name):
         self.fix_alphabet()
         if name == "train":
-            self.train_texts, self.train_Ids = read_instance(self.train_dir, self.word_alphabet, self.char_alphabet, self.feature_alphabets, self.label_alphabet, self.number_normalized, self.MAX_SENTENCE_LENGTH, self.sentence_classification, self.split_token)
+            self.train_texts, self.train_Ids = read_instance(self.train_dir, self.word_alphabet, self.char_alphabet, self.feature_alphabets, self.label_alphabet, self.number_normalized, self.MAX_SENTENCE_LENGTH, self.sentence_classification, self.split_token, fasttext=self.fasttext_model)
         elif name == "dev":
-            self.dev_texts, self.dev_Ids = read_instance(self.dev_dir, self.word_alphabet, self.char_alphabet, self.feature_alphabets, self.label_alphabet, self.number_normalized, self.MAX_SENTENCE_LENGTH, self.sentence_classification, self.split_token)
+            self.dev_texts, self.dev_Ids = read_instance(self.dev_dir, self.word_alphabet, self.char_alphabet, self.feature_alphabets, self.label_alphabet, self.number_normalized, self.MAX_SENTENCE_LENGTH, self.sentence_classification, self.split_token, fasttext=self.fasttext_model)
         elif name == "test":
-            self.test_texts, self.test_Ids = read_instance(self.test_dir, self.word_alphabet, self.char_alphabet, self.feature_alphabets, self.label_alphabet, self.number_normalized, self.MAX_SENTENCE_LENGTH, self.sentence_classification, self.split_token)
+            self.test_texts, self.test_Ids = read_instance(self.test_dir, self.word_alphabet, self.char_alphabet, self.feature_alphabets, self.label_alphabet, self.number_normalized, self.MAX_SENTENCE_LENGTH, self.sentence_classification, self.split_token, fasttext=self.fasttext_model)
         elif name == "raw":
-            self.raw_texts, self.raw_Ids = read_instance(self.raw_dir, self.word_alphabet, self.char_alphabet, self.feature_alphabets, self.label_alphabet, self.number_normalized, self.MAX_SENTENCE_LENGTH, self.sentence_classification, self.split_token)
+            self.raw_texts, self.raw_Ids = read_instance(self.raw_dir, self.word_alphabet, self.char_alphabet, self.feature_alphabets, self.label_alphabet, self.number_normalized, self.MAX_SENTENCE_LENGTH, self.sentence_classification, self.split_token, fasttext=self.fasttext_model)
         else:
             print("Error: you can only generate train/dev/test instance! Illegal input:%s"%(name))
 
@@ -342,10 +352,17 @@ class Data:
         tmp_dict = pickle.load(f)
         f.close()
         self.__dict__.update(tmp_dict)
+        if self.use_fasttext_as_model:
+            if self.word_emb_dir is None:
+                raise Exception('Cannot load model that uses fastText due to unspecified embedding directory')
+            self.build_fasttext_model(True, self.word_emb_dir, self.word_emb_dim)
 
     def save(self,save_file):
         f = open(save_file, 'wb')
-        pickle.dump(self.__dict__, f, 2)
+        dump = self.__dict__.copy()
+        if dump['fasttext_model'] is not None:
+            del dump['fasttext_model']
+        pickle.dump(dump, f, 2)
         f.close()
 
 
@@ -353,6 +370,12 @@ class Data:
     def write_nbest_decoded_results(self, predict_results, pred_scores, name):
         ## predict_results : [whole_sent_num, nbest, each_sent_length]
         ## pred_scores: [whole_sent_num, nbest]
+        if self.decode_dir is None:
+            raise Exception('No decode dir')
+        if not os.path.exists(self.decode_dir):
+            dec_dir, _ = os.path.split(self.decode_dir)
+            os.makedirs(dec_dir, exist_ok=True) 
+            print(f"Created decode dir: {self.decode_dir}")
         fout = open(self.decode_dir,'w')
         sent_num = len(predict_results)
         content_list = []
@@ -424,6 +447,9 @@ class Data:
         the_item = 'use_fasttext'
         if the_item in config:
             self.use_fasttext = str2bool(config[the_item])
+        the_item = 'use_fasttext_as_model'
+        if the_item in config:
+            self.use_fasttext_as_model = str2bool(config[the_item])
         the_item = 'char_emb_dir'
         if the_item in config:
             self.char_emb_dir = config[the_item]

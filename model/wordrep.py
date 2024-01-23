@@ -38,11 +38,15 @@ class WordRep(nn.Module):
                 exit(0)
         self.embedding_dim = data.word_emb_dim
         self.drop = nn.Dropout(data.HP_dropout)
-        self.word_embedding = nn.Embedding(data.word_alphabet.size(), self.embedding_dim)
-        if data.pretrain_word_embedding is not None:
-            self.word_embedding.weight.data.copy_(torch.from_numpy(data.pretrain_word_embedding))
+        if data.use_fasttext_as_model:
+            self.use_fasttext_as_model = True
         else:
-            self.word_embedding.weight.data.copy_(torch.from_numpy(self.random_embedding(data.word_alphabet.size(), self.embedding_dim)))
+            self.use_fasttext_as_model = False
+            self.word_embedding = nn.Embedding(data.word_alphabet.size(), self.embedding_dim)
+            if data.pretrain_word_embedding is not None:
+                self.word_embedding.weight.data.copy_(torch.from_numpy(data.pretrain_word_embedding))
+            else:
+                self.word_embedding.weight.data.copy_(torch.from_numpy(self.random_embedding(data.word_alphabet.size(), self.embedding_dim)))
 
         self.feature_num = data.feature_num
         self.feature_embedding_dims = data.feature_emb_dims
@@ -74,7 +78,7 @@ class WordRep(nn.Module):
     def forward(self, word_inputs,feature_inputs, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover):
         """
             input:
-                word_inputs: (batch_size, sent_len)
+                word_inputs: (batch_size, sent_len) or when using fasttext as model (batch_size, sent_len, word_emb_dim)
                 features: list [(batch_size, sent_len), (batch_len, sent_len),...]
                 word_seq_lengths: list of batch_size, (batch_size,1)
                 char_inputs: (batch_size*sent_len, word_length)
@@ -86,7 +90,10 @@ class WordRep(nn.Module):
         batch_size = word_inputs.size(0)
         sent_len = word_inputs.size(1)
 
-        word_embs =  self.word_embedding(word_inputs)
+        if self.use_fasttext_as_model:
+            word_embs = word_inputs
+        else:
+            word_embs =  self.word_embedding(word_inputs)
 
         word_list = [word_embs]
         if not self.sentence_classification:
