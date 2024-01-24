@@ -573,6 +573,8 @@ if __name__ == '__main__':
         print("MODEL: decode")
         data.load(data.dset_dir)
         data.read_config(args.config)
+        if not torch.cuda.is_available():
+            data.HP_gpu = False
         print(data.raw_dir)
         # exit(0)
         data.show_data_summary()
