@@ -3,12 +3,18 @@ from utils.eval.consts import MORPH, MULTI, TOK
 from utils import ner
 
 if __name__ == '__main__':
-    PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50.txt'
+    
+    PRED_MORPH = 'ncrf_results/morph/from_hpc_seed46_ftam/results.txt'
     morph, pred_morph = ner.read_file_to_sentences_df(MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
     tok, multi = ner.read_file_to_sentences_df(TOK), ner.read_file_to_sentences_df(MULTI)
-    print('GOLD MORPH')
+    print('GOLD MORPH FTAM SEED 46')
     ner.evaluate_morpheme(pred_morph, morph, multi, tok)
     
+    print('\n\nGOLD MORPH SEED 50')
+    PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50.txt'
+    pred_morph = ner.read_file_to_sentences_df(PRED_MORPH)
+    ner.evaluate_morpheme(pred_morph, morph, multi, tok)
+
     
     print('\n\nYAP MORPH')
     
