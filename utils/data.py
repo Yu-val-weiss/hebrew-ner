@@ -211,9 +211,8 @@ class Data:
                     self.norm_feature_embs[idx] = self.feat_config[self.feature_name[idx]]['emb_norm']
         # exit(0)
 
-    def build_fasttext_model(self, use_fasttext_as_model: bool, word_emb_dir: str, emb_dim: int):
-        if use_fasttext_as_model:
-            self.fasttext_model = load_fasttext_model(word_emb_dir, emb_dim)
+    def build_fasttext_model(self, word_emb_dir: str, emb_dim: int):
+        self.fasttext_model = load_fasttext_model(word_emb_dir, emb_dim)
 
     def build_alphabet(self, input_file):
         in_lines = open(input_file,'r').readlines()
@@ -347,15 +346,19 @@ class Data:
         print("Predict %s result has been written into file. %s"%(name, self.decode_dir))
 
 
-    def load(self,data_file):
+    def load(self,data_file, fasttext_model_dir=None):
         f = open(data_file, 'rb')
         tmp_dict = pickle.load(f)
         f.close()
         self.__dict__.update(tmp_dict)
+        print("None check", fasttext_model_dir is None)
         if self.use_fasttext_as_model:
-            if self.word_emb_dir is None:
+            if self.word_emb_dir is None and fasttext_model_dir is None:
                 raise Exception('Cannot load model that uses fastText due to unspecified embedding directory')
-            self.build_fasttext_model(True, self.word_emb_dir, self.word_emb_dim)
+            if fasttext_model_dir is not None:
+                self.build_fasttext_model(fasttext_model_dir, self.word_emb_dim)
+            else:
+                self.build_fasttext_model(self.word_emb_dir, self.word_emb_dim)
 
     def save(self,save_file):
         f = open(save_file, 'wb')

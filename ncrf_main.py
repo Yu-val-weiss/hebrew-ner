@@ -571,7 +571,7 @@ if __name__ == '__main__':
         train(data)
     elif status == 'decode':
         print("MODEL: decode")
-        data.load(data.dset_dir)
+        data.load(data.dset_dir, args.wordemb if args.wordemb != 'None' else None)
         data.read_config(args.config)
         if not torch.cuda.is_available():
             data.HP_gpu = False
