@@ -166,7 +166,9 @@ trained_models/
 
 .DS_STORE
 .vscode/
-*.tar.gz
+/*.tar.gz
 
 ncrf_configs/*
+# only include compressed files to vcs
 ncrf_hpc_configs/*
+!ncrf_hpc_configs/*.gz 
