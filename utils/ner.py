@@ -66,7 +66,7 @@ def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' '
                 if l.startswith(comment_delim):
                     continue
                 if l := l.strip():
-                    word, label = l.split(word_label_delim)
+                    word, label = l.rsplit(word_label_delim, maxsplit=1)
                     yield [curr_sent, word_ind, word, label]
                     word_ind += 1
                 else:
