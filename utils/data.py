@@ -351,7 +351,6 @@ class Data:
         tmp_dict = pickle.load(f)
         f.close()
         self.__dict__.update(tmp_dict)
-        print("None check", fasttext_model_dir is None)
         if self.use_fasttext_as_model:
             if self.word_emb_dir is None and fasttext_model_dir is None:
                 raise Exception('Cannot load model that uses fastText due to unspecified embedding directory')
