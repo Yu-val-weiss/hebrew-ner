@@ -1,3 +1,5 @@
+.PHONY: *
+
 code-archive:
 	tar --no-xattrs -X .tarignore -czvf code_archive.tar.gz --totals . 
 
@@ -28,7 +30,7 @@ upload-slurm-configs:
 clean:
 	rm -rf *archive.tar.gz
 
-archive.tar.gz:
+archive:
 	git ls-files -z | xargs -0 tar -czvf archive.tar.gz                   
 
 run-yap:
