@@ -453,6 +453,8 @@ def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_
     A named entity is correct only if it is an exact match of the corresponding entity in the data file.
     
     Paper defaults beta to 1 for f_beta score
+    
+    `multi_tok` validates multi labels to single
     '''
     
     # we can ignore BIOSE labels, only interested in category and location
