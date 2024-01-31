@@ -535,9 +535,9 @@ def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.D
     merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True, multi_label_delim=multi_label_delim)
     
     print("\nMorph to single")
-    m_to_multi = evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    m_to_tok = evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
     
-    return m_to_m, m_to_multi
+    return m_to_m, m_to_tok
 
 def raw_toks_str_from_ner_df(df: pd.DataFrame) -> str:
     return '\n\n'.join(df
