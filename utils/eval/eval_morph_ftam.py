@@ -2,7 +2,7 @@ import pandas as pd
 from utils.eval.consts import MORPH, MULTI, TOK
 from utils import ner
 
-def eval_morph():
+def eval_morph_ftam():
     PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/ncrf_results/morph/from_hpc_seed46_ftam/results.txt'
     morph, pred_morph = ner.read_file_to_sentences_df(MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
     tok, multi = ner.read_file_to_sentences_df(TOK), ner.read_file_to_sentences_df(MULTI)
@@ -50,4 +50,4 @@ def eval_morph():
     return (gold_morph[1], pure_yap, pred_multi, gold_multi)    # return only morph to single
 
 if __name__ == '__main__':
-    
+    eval_morph_ftam()
