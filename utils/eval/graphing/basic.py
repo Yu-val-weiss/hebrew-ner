@@ -35,13 +35,13 @@ if __name__ == '__main__':
 
     # Set labels, title, and legend
     ax.set_xlabel('NER Type')
-    ax.set_ylabel('F1 Scores')
+    ax.set_ylabel('F1 Scores (evaluated on whole tokens)')
     ax.set_ylim(0, 100)
     ax.set_title('Comparison between reported results and my recreated results')
     ax.set_xticks(orig_positions + bar_width / 2)
     ax.set_xticklabels(categories)
     ax.grid(axis='y')
-    ax.legend(loc='upper right', fontsize='small')
+    ax.legend(loc='upper left', fontsize='small')
     
     
     for bar, barr, orig_value, mine_value in zip(orig_bars, my_bars, orig_values, mine_values):
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
         ax.vlines(x=x, ymin=barr.get_height(), ymax=barr.get_height() + 3, colors=barr._original_facecolor)
 
-    plt.savefig('graphs/recreation_chart.png')
+    plt.savefig('graphs/recreation_chart.png', dpi=800)
     # Show the plot
     plt.show()
    
