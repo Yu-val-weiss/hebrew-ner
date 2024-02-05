@@ -79,7 +79,7 @@ class Data:
         self.char_emb_dim = 30
 
         ###Networks
-        self.word_feature_extractor = "LSTM" ## "LSTM"/"CNN"/"GRU"/
+        self.word_feature_extractor = "LSTM" ## "LSTM"/"CNN"/"GRU"/"TRN"
         self.use_char = True
         self.char_feature_extractor = "CNN" ## "LSTM"/"CNN"/"GRU"/None
         self.use_crf = True
@@ -98,6 +98,9 @@ class Data:
         self.HP_dropout = 0.5
         self.HP_lstm_layer = 1
         self.HP_bilstm = True
+        # transformer hyperparameters
+        self.HP_transformer_layer = 2
+        self.HP_transformer_heads = 6
 
         self.HP_gpu = False
         self.HP_lr = 0.015
@@ -175,9 +178,15 @@ class Data:
         print("     Hyper              l2: %s"%(self.HP_l2))
         print("     Hyper      hidden_dim: %s"%(self.HP_hidden_dim))
         print("     Hyper         dropout: %s"%(self.HP_dropout))
-        print("     Hyper      lstm_layer: %s"%(self.HP_lstm_layer))
-        print("     Hyper          bilstm: %s"%(self.HP_bilstm))
+        if self.word_feature_extractor == 'TRN':
+            print("     Hyper        tr_layer: %s"%(self.HP_transformer_layer))
+            print("     Hyper      attn_heads: %s"%(self.HP_transformer_heads))
+        else:
+            print("     Hyper      lstm_layer: %s"%(self.HP_lstm_layer))
+            print("     Hyper          bilstm: %s"%(self.HP_bilstm))
+        
         print("     Hyper             GPU: %s"%(self.HP_gpu))
+        
         print("DATA SUMMARY END.")
         print("++"*50)
         sys.stdout.flush()
@@ -546,6 +555,12 @@ class Data:
         the_item = 'bilstm'
         if the_item in config:
             self.HP_bilstm = str2bool(config[the_item])
+        the_item = 'transformer_layer'
+        if the_item in config:
+            self.HP_transformer_layer = int(config[the_item])
+        the_item = 'transformer_heads'
+        if the_item in config:
+            self.HP_transformer_heads = int(config[the_item])
 
         the_item = 'gpu'
         if the_item in config:

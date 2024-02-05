@@ -231,6 +231,15 @@ class EncoderLayer(nn.Module):
 
 class Encoder(nn.Module):
     def __init__(self, N: int, d_model: int, d_ff: int, heads: int, dropout: float):
+        """Initialise encoder
+
+        Args:
+            N (int): Number of layers
+            d_model (int): model dimension (input dim)
+            d_ff (int): hidden dimension
+            heads (int): number of attention heads
+            dropout (float): dropout percentage
+        """
         super().__init__()
         self.layers = clonelayer(N, EncoderLayer, d_model, d_ff, heads, dropout)
         self.norm = LayerNormaliser(d_model)
