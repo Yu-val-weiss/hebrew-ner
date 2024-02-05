@@ -59,7 +59,7 @@ source /home/yw580/venv/bin/activate
 application="python"
 
 #! Run options for the application:
-options="/home/yw580/hebrew-ner/ncrf_main.py --config /home/yw580/hebrew-ner/configs/transformer/hpc/token_single_hpc.conf --moddir trn_feb_5"
+options="/home/yw580/hebrew-ner/ncrf_main.py --config /home/yw580/hebrew-ner/configs/transformer/hpc/token_single.conf --moddir trn_feb_5"
 
 #! Work directory (i.e. where the job will run):
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
