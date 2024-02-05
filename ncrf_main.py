@@ -1,4 +1,3 @@
-# type: ignore
 # -*- coding: utf-8 -*-
 # @Author: Jie
 # @Date:   2017-06-15 14:11:08
@@ -34,7 +33,8 @@ def data_initialization(data: Data):
     data.build_alphabet(data.dev_dir)
     data.build_alphabet(data.test_dir)
     data.fix_alphabet()
-    data.build_fasttext_model(data.use_fasttext_as_model, data.word_emb_dir, data.word_emb_dim)
+    if data.use_fasttext_as_model:
+        data.build_fasttext_model(data.word_emb_dir, data.word_emb_dim)
 
 
 def predict_check(pred_variable, gold_variable, mask_variable, sentence_classification=False):
