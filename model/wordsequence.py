@@ -7,19 +7,25 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+
+from utils.data import Data
 from .wordrep import WordRep
+from .transformer_labeller import TransformerLabeller
 
 class WordSequence(nn.Module):
-    def __init__(self, data):
+    def __init__(self, data: Data):
         super(WordSequence, self).__init__()
         print("build word sequence feature extractor: %s..."%(data.word_feature_extractor))
         self.gpu = data.HP_gpu
         self.use_char = data.use_char
         # self.batch_size = data.HP_batch_size
         # self.hidden_dim = data.HP_hidden_dim
+        self.drop_factor = data.HP_dropout
         self.droplstm = nn.Dropout(data.HP_dropout)
         self.bilstm_flag = data.HP_bilstm
         self.lstm_layer = data.HP_lstm_layer
+        self.transformer_layer = data.HP_transformer_layer
+        self.attn_heads = data.HP_transformer_heads
         self.wordrep = WordRep(data)
         self.input_size = data.word_emb_dim
         self.feature_num = data.feature_num
@@ -41,6 +47,8 @@ class WordSequence(nn.Module):
             self.lstm = nn.GRU(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
         elif self.word_feature_extractor == "LSTM":
             self.lstm = nn.LSTM(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
+        elif self.word_feature_extractor == 'TRN':
+            self.transformer = TransformerLabeller(self.input_size, self.transformer_layer, self.drop_factor, self.attn_heads)
         elif self.word_feature_extractor == "CNN":
             # cnn_hidden = data.HP_hidden_dim
             self.word2cnn = nn.Linear(self.input_size, data.HP_hidden_dim)
@@ -56,7 +64,10 @@ class WordSequence(nn.Module):
                 self.cnn_drop_list.append(nn.Dropout(data.HP_dropout))
                 self.cnn_batchnorm_list.append(nn.BatchNorm1d(data.HP_hidden_dim))
         # The linear layer that maps from hidden state space to tag space
-        self.hidden2tag = nn.Linear(data.HP_hidden_dim, data.label_alphabet_size)
+        if self.word_feature_extractor == "TRN":
+            self.hidden2tag = nn.Linear(self.input_size, data.label_alphabet_size)
+        else:
+            self.hidden2tag = nn.Linear(data.HP_hidden_dim, data.label_alphabet_size)
 
         if self.gpu:
             self.droplstm = self.droplstm.cuda()
@@ -67,6 +78,8 @@ class WordSequence(nn.Module):
                     self.cnn_list[idx] = self.cnn_list[idx].cuda()
                     self.cnn_drop_list[idx] = self.cnn_drop_list[idx].cuda()
                     self.cnn_batchnorm_list[idx] = self.cnn_batchnorm_list[idx].cuda()
+            elif self.word_feature_extractor == 'TRN':
+                self.transformer = self.transformer.cuda()
             else:
                 self.lstm = self.lstm.cuda()
 
@@ -98,6 +111,8 @@ class WordSequence(nn.Module):
                 if batch_size > 1:
                     cnn_feature = self.cnn_batchnorm_list[idx](cnn_feature)
             feature_out = cnn_feature.transpose(2,1).contiguous()
+        elif self.word_feature_extractor == "TRN":
+            feature_out = self.transformer(word_represent)
         else:
             packed_words = pack_padded_sequence(word_represent, word_seq_lengths.cpu().numpy(), True)
             hidden = None
@@ -107,6 +122,7 @@ class WordSequence(nn.Module):
             feature_out = self.droplstm(lstm_out.transpose(1,0))
         ## feature_out (batch_size, seq_len, hidden_size)
         outputs = self.hidden2tag(feature_out)
+        # print("OUTPUT SIZE:", outputs.size())
         return outputs
 
     def sentence_representation(self, word_inputs, feature_inputs, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover):
