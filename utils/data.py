@@ -80,6 +80,7 @@ class Data:
 
         ###Networks
         self.word_feature_extractor = "LSTM" ## "LSTM"/"CNN"/"GRU"/"TRN"
+        self.trn_posenc = False
         self.use_char = True
         self.char_feature_extractor = "CNN" ## "LSTM"/"CNN"/"GRU"/None
         self.use_crf = True
@@ -101,6 +102,7 @@ class Data:
         # transformer hyperparameters
         self.HP_transformer_layer = 2
         self.HP_transformer_heads = 6
+        
 
         self.HP_gpu = False
         self.HP_lr = 0.015
@@ -157,6 +159,8 @@ class Data:
         print(" Model Network:")
         print("     Model        use_crf: %s"%(self.use_crf))
         print("     Model word extractor: %s"%(self.word_feature_extractor))
+        if self.word_feature_extractor == 'TRN':
+            print("     Model  uses  pos_enc: %s"%(self.trn_posenc))
         print("     Model       use_char: %s"%(self.use_char))
         if self.use_char:
             print("     Model char extractor: %s"%(self.char_feature_extractor))
@@ -506,6 +510,9 @@ class Data:
         the_item = 'word_seq_feature'
         if the_item in config:
             self.word_feature_extractor = config[the_item]
+        the_item = 'positional_encoding'
+        if the_item in config:
+            self.trn_posenc = str2bool(config[the_item])
         the_item = 'char_seq_feature'
         if the_item in config:
             self.char_feature_extractor = config[the_item]
