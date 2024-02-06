@@ -22,7 +22,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:15:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=ALL
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -59,7 +59,7 @@ source /home/yw580/venv/bin/activate
 application="python"
 
 #! Run options for the application:
-options="/home/yw580/hebrew-ner/ncrf_main.py --config /home/yw580/hebrew-ner/configs/transformer/hpc/token_single/6-12-1014.conf --moddir trn_6_12_1014"
+options="/home/yw580/hebrew-ner/ncrf_main.py --config /home/yw580/hebrew-ner/configs/transformer/hpc/token_single/6-2-1014.conf --moddir trn_6_2_1014"
 
 #! Work directory (i.e. where the job will run):
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
