@@ -558,7 +558,7 @@ class Data:
         the_item = 'transformer_layer'
         if the_item in config:
             self.HP_transformer_layer = int(config[the_item])
-        the_item = 'transformer_heads'
+        the_item = 'transformer_head'
         if the_item in config:
             self.HP_transformer_heads = int(config[the_item])
 
