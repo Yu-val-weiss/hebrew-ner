@@ -1,5 +1,5 @@
 import torch
-from model.transformer import Encoder, subsequent_mask
+from model.transformer import Encoder, subsequent_mask, PositionalEncoding
 from torch import nn 
 
 # signature in wordsequence:
@@ -10,7 +10,7 @@ from torch import nn
 #       if you want a certain number of heads may need to adjust char hidden dim to make it divide
 
 class TransformerLabeller(nn.Module):
-    def __init__(self, input_size: int, num_layers: int, dropout: float, num_heads: int) -> None:
+    def __init__(self, input_size: int, num_layers: int, dropout: float, num_heads: int, pos_enc=False) -> None:
         """Initialiser
 
         Args:
@@ -25,6 +25,11 @@ class TransformerLabeller(nn.Module):
         self.dropout = dropout
         self.heads = num_heads
         
+        self.use_pos_enc = pos_enc
+        
+        if pos_enc:
+            self.pos_enc = PositionalEncoding(self.input_size, dropout=self.dropout, max_len=500)
+        
         self.encoder = Encoder(self.num_layers, self.input_size, self.input_size * 4, self.heads, self.dropout)
         
 
@@ -34,4 +39,6 @@ class TransformerLabeller(nn.Module):
         input size == hidden_dim
         '''
         mask = subsequent_mask(x.size(1)).to(x.device)
+        if self.use_pos_enc:
+            x = self.pos_enc(x)
         return self.encoder(x, mask)

@@ -48,7 +48,7 @@ class WordSequence(nn.Module):
         elif self.word_feature_extractor == "LSTM":
             self.lstm = nn.LSTM(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
         elif self.word_feature_extractor == 'TRN':
-            self.transformer = TransformerLabeller(self.input_size, self.transformer_layer, self.drop_factor, self.attn_heads)
+            self.transformer = TransformerLabeller(self.input_size, self.transformer_layer, self.drop_factor, self.attn_heads, data.trn_posenc)
         elif self.word_feature_extractor == "CNN":
             # cnn_hidden = data.HP_hidden_dim
             self.word2cnn = nn.Linear(self.input_size, data.HP_hidden_dim)
