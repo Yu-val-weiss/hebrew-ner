@@ -1,3 +1,4 @@
+import torch
 from model.transformer import Encoder, subsequent_mask
 from torch import nn 
 
@@ -27,9 +28,10 @@ class TransformerLabeller(nn.Module):
         self.encoder = Encoder(self.num_layers, self.input_size, self.input_size * 4, self.heads, self.dropout)
         
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         '''
         x: (batch_size, seq_len, hidden_dim)
         input size == hidden_dim
         '''
-        return self.encoder(x, subsequent_mask(x.size(1)))
+        mask = subsequent_mask(x.size(1)).to(x.device)
+        return self.encoder(x, mask)
