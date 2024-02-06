@@ -368,6 +368,8 @@ def train(data: Data):
         model = SentClassifier(data)
     else:
         model = SeqLabel(data)
+        
+    print("Learnable parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     if data.optimizer.lower() == "sgd":
         optimizer = optim.SGD(model.parameters(), lr=data.HP_lr, momentum=data.HP_momentum,weight_decay=data.HP_l2)
