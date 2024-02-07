@@ -59,7 +59,7 @@ source /home/yw580/venv/bin/activate
 application="python"
 
 #! Run options for the application:
-options="/home/yw580/hebrew-ner/ncrf_main.py --config /home/yw580/hebrew-ner/configs/morph_eval_hpc.conf"
+options="/home/yw580/hebrew-ner/ncrf_main.py --config /home/yw580/hebrew-ner/configs/standard/hpc/morph_eval_hpc.conf"
 
 #! Work directory (i.e. where the job will run):
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
