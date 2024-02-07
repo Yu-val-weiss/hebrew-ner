@@ -125,7 +125,7 @@ class PositionalEncoding(nn.Module):
     A way of encoding the position of the token in the same dimensions as the word embeddings.
     '''
     
-    def __init__(self, embedding_dim: int, dropout: float = 0.1, max_len: int = 5000):
+    def __init__(self, embedding_dim: int, dropout: float = 0.1, max_len: int = 5000, trim_from=-1):
         super().__init__()
         self.dropout = nn.Dropout(dropout)
         
@@ -138,7 +138,12 @@ class PositionalEncoding(nn.Module):
         
         pos_enc[:, 0::2] = torch.sin(position * div_term) # the slice means for all rows, all even index columns
         pos_enc[:, 1::2] = torch.cos(position * div_term) # " "                               odd  
+        
+        if trim_from > 0:
+            pos_enc[:, trim_from:] = 0
+            
         pos_enc = pos_enc.unsqueeze(0) # if using batch first, use (0) else use (1)
+        
         self.register_buffer("pos_enc", pos_enc) # this stores the pos_enc, but not as a parameter to be trained
         
     def forward(self, X: Tensor):
