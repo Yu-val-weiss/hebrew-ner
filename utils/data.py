@@ -81,6 +81,7 @@ class Data:
         ###Networks
         self.word_feature_extractor = "LSTM" ## "LSTM"/"CNN"/"GRU"/"TRN"
         self.trn_posenc = False
+        self.trn_wordonly_posenc = False
         self.use_char = True
         self.char_feature_extractor = "CNN" ## "LSTM"/"CNN"/"GRU"/None
         self.use_crf = True
@@ -161,6 +162,7 @@ class Data:
         print("     Model word extractor: %s"%(self.word_feature_extractor))
         if self.word_feature_extractor == 'TRN':
             print("     Model  uses  pos_enc: %s"%(self.trn_posenc))
+            print("     Model  trims pos_enc: %s"%(self.trn_wordonly_posenc))
         print("     Model       use_char: %s"%(self.use_char))
         if self.use_char:
             print("     Model char extractor: %s"%(self.char_feature_extractor))
@@ -513,6 +515,9 @@ class Data:
         the_item = 'positional_encoding'
         if the_item in config:
             self.trn_posenc = str2bool(config[the_item])
+        the_item = 'trim_posenc'
+        if the_item in config:
+            self.trn_wordonly_posenc = str2bool(config[the_item])
         the_item = 'char_seq_feature'
         if the_item in config:
             self.char_feature_extractor = config[the_item]
