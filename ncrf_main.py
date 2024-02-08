@@ -128,7 +128,12 @@ def lr_decay(optimizer, epoch, decay_rate, init_lr):
         param_group['lr'] = lr
     return optimizer
 
-
+def lr_rate(step, model_size, factor, warmup):
+    if step == 0:
+        step = 1
+    return factor * (
+        model_size ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
+    )
 
 def evaluate(data: Data, model, name, nbest=None):
     if name == "train":
@@ -393,6 +398,13 @@ def train(data: Data):
         print("Epoch: %s/%s" %(idx,data.HP_iteration))
         if data.optimizer == "SGD":
             optimizer = lr_decay(optimizer, idx, data.HP_lr_decay, data.HP_lr)
+        
+        lr_scheduler = None
+        if data.HP_lr_scheduler and data.optimizer != "SGD":
+            lr_scheduler = optim.lr_scheduler.LambdaLR(
+                optimizer=optimizer, lr_lambda=lambda step: lr_rate(step, model_size=data.word_emb_dim + data.HP_char_hidden_dim, factor=1, warmup=100)
+            )
+            
         instance_count = 0
         sample_id = 0
         sample_loss = 0
@@ -440,6 +452,8 @@ def train(data: Data):
                 sample_loss = 0
             loss.backward()
             optimizer.step()
+            if lr_scheduler is not None:
+                lr_scheduler.step()
             model.zero_grad()
         temp_time = time.time()
         temp_cost = temp_time - temp_start
