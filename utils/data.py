@@ -108,6 +108,7 @@ class Data:
         self.HP_gpu = False
         self.HP_lr = 0.015
         self.HP_lr_decay = 0.05
+        self.HP_lr_scheduler = False
         self.HP_clip = None
         self.HP_momentum = 0
         self.HP_l2 = 1e-8
@@ -179,6 +180,7 @@ class Data:
 
         print("     Hyper              lr: %s"%(self.HP_lr))
         print("     Hyper        lr_decay: %s"%(self.HP_lr_decay))
+        print("     Hyper    lr_scheduler: %s"%(self.HP_lr_scheduler))
         print("     Hyper         HP_clip: %s"%(self.HP_clip))
         print("     Hyper        momentum: %s"%(self.HP_momentum))
         print("     Hyper              l2: %s"%(self.HP_l2))
@@ -583,6 +585,9 @@ class Data:
         the_item = 'lr_decay'
         if the_item in config:
             self.HP_lr_decay = float(config[the_item])
+        the_item = 'lr_scheduler'
+        if the_item in config:
+            self.HP_lr_scheduler = str2bool(config[the_item])
         the_item = 'clip'
         if the_item in config:
             self.HP_clip = float(config[the_item])
