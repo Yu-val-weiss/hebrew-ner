@@ -103,6 +103,7 @@ class Data:
         # transformer hyperparameters
         self.HP_transformer_layer = 2
         self.HP_transformer_heads = 6
+        self.HP_trn_hidden_dim = -1
         
 
         self.HP_gpu = False
@@ -189,6 +190,7 @@ class Data:
         if self.word_feature_extractor == 'TRN':
             print("     Hyper        tr_layer: %s"%(self.HP_transformer_layer))
             print("     Hyper      attn_heads: %s"%(self.HP_transformer_heads))
+            print("     Hyper  trn_hidden_dim: %s"%(self.HP_trn_hidden_dim))
         else:
             print("     Hyper      lstm_layer: %s"%(self.HP_lstm_layer))
             print("     Hyper          bilstm: %s"%(self.HP_bilstm))
@@ -575,6 +577,9 @@ class Data:
         the_item = 'transformer_head'
         if the_item in config:
             self.HP_transformer_heads = int(config[the_item])
+        the_item = 'transformer_hidden_dim'
+        if the_item in config:
+            self.HP_trn_hidden_dim = int(config[the_item])
 
         the_item = 'gpu'
         if the_item in config:
