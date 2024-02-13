@@ -10,7 +10,7 @@ from torch import nn
 #       if you want a certain number of heads may need to adjust char hidden dim to make it divide
 
 class TransformerLabeller(nn.Module):
-    def __init__(self, input_size: int, num_layers: int, dropout: float, num_heads: int, pos_enc=False, trim_pos_enc_from=-1) -> None:
+    def __init__(self, input_size: int, num_layers: int, dropout: float, num_heads: int, hidden_dim=-1, pos_enc=False, trim_pos_enc_from=-1) -> None:
         """Initialiser
 
         Args:
@@ -24,13 +24,14 @@ class TransformerLabeller(nn.Module):
         self.num_layers = num_layers
         self.dropout = dropout
         self.heads = num_heads
+        self.hidden_dim = hidden_dim
         
         self.use_pos_enc = pos_enc
         
         if pos_enc:
             self.pos_enc = PositionalEncoding(self.input_size, dropout=self.dropout, max_len=500, trim_from=trim_pos_enc_from)
         
-        self.encoder = Encoder(self.num_layers, self.input_size, self.input_size * 4, self.heads, self.dropout)
+        self.encoder = Encoder(self.num_layers, self.input_size, self.input_size * 4 if self.hidden_dim == -1 else self.hidden_dim, self.heads, self.dropout)
         
 
     def forward(self, x: torch.Tensor):
