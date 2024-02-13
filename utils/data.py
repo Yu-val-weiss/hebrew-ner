@@ -79,7 +79,7 @@ class Data:
         self.char_emb_dim = 30
 
         ###Networks
-        self.word_feature_extractor = "LSTM" ## "LSTM"/"CNN"/"GRU"/"TRN"
+        self.word_feature_extractor = "LSTM" ## "LSTM"/"CNN"/"GRU"/"TRN"/"HYB"
         self.trn_posenc = False
         self.trn_wordonly_posenc = False
         self.use_char = True
