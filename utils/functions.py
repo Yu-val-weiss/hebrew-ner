@@ -197,11 +197,11 @@ def build_pretrain_embedding(embedding_path, word_alphabet, embedd_dim=100, norm
 
 def build_pretrain_embedding_fasttext(embedding_path, word_alphabet, embedd_dim=100, norm=True):
     ft = load_fasttext_model(embedding_path, embedd_dim)
-    pretrain_emb = np.empty([word_alphabet.size(), embedd_dim])
+    pretrain_emb = np.empty([word_alphabet.size(), min(embedd_dim, ft.get_dimension())])
     for word, index in word_alphabet.iteritems():
         word_vec = ft.get_word_vector(word)
-        if embedd_dim > 300:
-            word_vec = np.tile(word_vec, (embedd_dim + 299) // 300)[:embedd_dim] # this copies the embedding to enlarge it
+        # if embedd_dim > 300:
+        #     word_vec = np.tile(word_vec, (embedd_dim + 299) // 300)[:embedd_dim] # this copies the embedding to enlarge it
         if norm:
             pretrain_emb[index,:] = norm2one(word_vec)
         else:
@@ -217,6 +217,8 @@ def load_fasttext_model(embedding_path, embedd_dim=300):
     if (dim := ft.get_dimension()) > embedd_dim:
         fasttext.util.reduce_model(ft, embedd_dim)
         print(f"Reduced dimension from {dim} to {embedd_dim}.")
+    elif dim < embedd_dim:
+        print(f"Linear projection of word embedding will be added from {dim} -> {embedd_dim}")
     return ft
 
 def norm2one(vec):
