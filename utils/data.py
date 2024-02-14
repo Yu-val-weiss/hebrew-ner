@@ -192,7 +192,7 @@ class Data:
             print("     Hyper        tr_layer: %s"%(self.HP_transformer_layer))
             print("     Hyper      attn_heads: %s"%(self.HP_transformer_heads))
             print("     Hyper  trn_hidden_dim: %s"%(self.HP_trn_hidden_dim))
-            print("     Hyper    word proj to: %s"%(self.HP_trn_proj_emb))
+            print("     Hyper   word rep proj: %s"%(self.HP_trn_proj_emb))
         else:
             print("     Hyper      lstm_layer: %s"%(self.HP_lstm_layer))
             print("     Hyper          bilstm: %s"%(self.HP_bilstm))
