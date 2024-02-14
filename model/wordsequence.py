@@ -48,7 +48,7 @@ class WordSequence(nn.Module):
             self.lstm = nn.GRU(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
         elif self.word_feature_extractor == "LSTM":
             self.lstm = nn.LSTM(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
-        elif self.word_feature_extractor == 'TRN':
+        elif self.word_feature_extractor == "TRN":
             trim_pos_enc = -1 if not data.trn_wordonly_posenc else data.word_emb_dim
             if self.proj_word_emb != -1:
                 self.transformer = nn.Sequential(

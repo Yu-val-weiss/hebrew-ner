@@ -37,12 +37,16 @@ class WordRep(nn.Module):
                 print("Error char feature selection, please check parameter data.char_feature_extractor (CNN/LSTM/GRU/ALL).")
                 exit(0)
         self.embedding_dim = data.word_emb_dim
+        self.proj_word = False
+        if self.embedding_dim > (fr := len(data.pretrain_word_embedding[0])):
+            self.proj_word = True
+            self.proj = nn.Linear(fr, self.embedding_dim)
         self.drop = nn.Dropout(data.HP_dropout)
         if data.use_fasttext_as_model:
             self.use_fasttext_as_model = True
         else:
             self.use_fasttext_as_model = False
-            self.word_embedding = nn.Embedding(data.word_alphabet.size(), self.embedding_dim)
+            self.word_embedding = nn.Embedding(data.word_alphabet.size(), min(self.embedding_dim, data.pretrain_word_embedding.shape[-1]))
             if data.pretrain_word_embedding is not None:
                 self.word_embedding.weight.data.copy_(torch.from_numpy(data.pretrain_word_embedding))
             else:
@@ -63,6 +67,8 @@ class WordRep(nn.Module):
             self.drop = self.drop.cuda()
             if not self.use_fasttext_as_model:
                 self.word_embedding = self.word_embedding.cuda()
+            if self.proj_word:
+                self.proj.cuda()
             for idx in range(self.feature_num):
                 self.feature_embeddings[idx] = self.feature_embeddings[idx].cuda()
 
@@ -95,7 +101,10 @@ class WordRep(nn.Module):
             word_embs = word_inputs
         else:
             word_embs =  self.word_embedding(word_inputs)
-
+            
+        if self.proj_word:
+            word_embs = self.proj(word_embs)
+            
         word_list = [word_embs]
         if not self.sentence_classification:
             for idx in range(self.feature_num):
