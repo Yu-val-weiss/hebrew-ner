@@ -4,7 +4,7 @@ code-archive:
 	tar --no-xattrs -X .tarignore -czvf code_archive.tar.gz --totals . 
 
 upload-code:
-	rsync -av --progress --exclude-from='ignore.txt' . yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+	rsync -av --progress --exclude-from='ignore.txt' . yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner --human-readable
 
 data-archive:
 	tar --no-xattrs -X .tarignore -czvf data_archive.tar.gz --totals -C /Users/yuval/GitHub/NEMO-Corpus data/
@@ -19,13 +19,13 @@ upload-fasttext:
 	scp fasttext_archive.tar.gz yw580@login.hpc.cam.ac.uk:/rds/user/yw580/hpc-work
 
 upload-slurm:
-	rsync -av --progress slurm yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+	rsync -av --progress slurm yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner --human-readable --delete
 
 upload-configs:
-	rsync -av --progress configs yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+	rsync -av --progress configs yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner --human-readable --delete
 
 upload-slurm-configs:
-	rsync -av --progress configs slurm yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner
+	rsync -av --progress configs slurm yw580@login.hpc.cam.ac.uk:/home/yw580/hebrew-ner --human-readable --delete
 
 clean:
 	rm -rf *archive.tar.gz
