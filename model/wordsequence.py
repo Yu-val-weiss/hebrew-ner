@@ -51,12 +51,8 @@ class WordSequence(nn.Module):
                 self.lstm = nn.LSTM(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
             if self.word_feature_extractor in ["TRN", "HYB"]:
                 trim_pos_enc = -1 if not data.trn_wordonly_posenc else data.word_emb_dim
-                input_size = self.input_size if self.word_feature_extractor == "TRN" else lstm_hidden
+                input_size = self.input_size if self.word_feature_extractor == "TRN" else data.HP_hidden_dim
                 self.transformer = TransformerLabeller(input_size, self.transformer_layer, self.drop_factor, self.attn_heads, pos_enc=data.trn_posenc, trim_pos_enc_from=trim_pos_enc, hidden_dim=data.HP_trn_hidden_dim)
-            if self.word_feature_extractor == "HYB":
-                self.hybrid = nn.Sequential(
-                    self.lstm, self.transformer
-                )
         elif self.word_feature_extractor == "CNN":
             # cnn_hidden = data.HP_hidden_dim
             self.word2cnn = nn.Linear(self.input_size, data.HP_hidden_dim)
@@ -86,12 +82,10 @@ class WordSequence(nn.Module):
                     self.cnn_list[idx] = self.cnn_list[idx].cuda()
                     self.cnn_drop_list[idx] = self.cnn_drop_list[idx].cuda()
                     self.cnn_batchnorm_list[idx] = self.cnn_batchnorm_list[idx].cuda()
-            if self.word_feature_extractor == "TRN":
+            if self.word_feature_extractor in ["TRN", "HYB"]:
                 self.transformer = self.transformer.cuda()
-            elif self.word_feature_extractor == "LSTM":
+            elif self.word_feature_extractor == ["LSTM", "HYB"]:
                 self.lstm = self.lstm.cuda()
-            elif self.word_feature_extractor == "HYB":
-                self.hybrid = self.hybrid.cuda()
 
 
     def forward(self, word_inputs, feature_inputs, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover):
