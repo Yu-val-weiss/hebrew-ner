@@ -70,7 +70,7 @@ class WordSequence(nn.Module):
         # The linear layer that maps from hidden state space to tag space
         if self.word_feature_extractor == "TRN":
             if self.proj_word_emb == -1:  
-                 self.hidden2tag = nn.Linear(self.input_size, data.label_alphabet_size)
+                self.hidden2tag = nn.Linear(self.input_size, data.label_alphabet_size)
             else:
                 self.hidden2tag = nn.Linear(self.proj_word_emb, data.label_alphabet_size)
         elif self.word_feature_extractor == "HYB":
