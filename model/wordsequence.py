@@ -46,17 +46,13 @@ class WordSequence(nn.Module):
         self.word_feature_extractor = data.word_feature_extractor
         if self.word_feature_extractor == "GRU":
             self.lstm = nn.GRU(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
-        elif self.word_feature_extractor == "LSTM":
-            self.lstm = nn.LSTM(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
-        elif self.word_feature_extractor == "TRN":
-            trim_pos_enc = -1 if not data.trn_wordonly_posenc else data.word_emb_dim
-            if self.proj_word_emb != -1:
-                self.transformer = nn.Sequential(
-                    nn.Linear(self.input_size, self.proj_word_emb),
-                    TransformerLabeller(self.proj_word_emb, self.transformer_layer, self.drop_factor, self.attn_heads, pos_enc=data.trn_posenc, trim_pos_enc_from=trim_pos_enc, hidden_dim=data.HP_trn_hidden_dim)
-                )
-            else:
-                self.transformer = TransformerLabeller(self.input_size, self.transformer_layer, self.drop_factor, self.attn_heads, pos_enc=data.trn_posenc, trim_pos_enc_from=trim_pos_enc, hidden_dim=data.HP_trn_hidden_dim)
+        elif self.word_feature_extractor in ["LSTM", "HYB", "TRN"]:
+            if self.word_feature_extractor in ["LSTM", "HYB"]:
+                self.lstm = nn.LSTM(self.input_size, lstm_hidden, num_layers=self.lstm_layer, batch_first=True, bidirectional=self.bilstm_flag)
+            if self.word_feature_extractor in ["TRN", "HYB"]:
+                trim_pos_enc = -1 if not data.trn_wordonly_posenc else data.word_emb_dim
+                input_size = self.input_size if self.word_feature_extractor == "TRN" else data.HP_hidden_dim
+                self.transformer = TransformerLabeller(input_size, self.transformer_layer, self.drop_factor, self.attn_heads, pos_enc=data.trn_posenc, trim_pos_enc_from=trim_pos_enc, hidden_dim=data.HP_trn_hidden_dim)
         elif self.word_feature_extractor == "CNN":
             # cnn_hidden = data.HP_hidden_dim
             self.word2cnn = nn.Linear(self.input_size, data.HP_hidden_dim)
@@ -77,6 +73,8 @@ class WordSequence(nn.Module):
                 self.hidden2tag = nn.Linear(self.input_size, data.label_alphabet_size)
             else:
                 self.hidden2tag = nn.Linear(self.proj_word_emb, data.label_alphabet_size)
+        elif self.word_feature_extractor == "HYB":
+            self.hidden2tag = nn.Linear(data.HP_hidden_dim, data.label_alphabet_size)
         else:
             self.hidden2tag = nn.Linear(data.HP_hidden_dim, data.label_alphabet_size)
 
@@ -89,9 +87,9 @@ class WordSequence(nn.Module):
                     self.cnn_list[idx] = self.cnn_list[idx].cuda()
                     self.cnn_drop_list[idx] = self.cnn_drop_list[idx].cuda()
                     self.cnn_batchnorm_list[idx] = self.cnn_batchnorm_list[idx].cuda()
-            elif self.word_feature_extractor == "TRN":
+            if self.word_feature_extractor in ["TRN", "HYB"]:
                 self.transformer = self.transformer.cuda()
-            else:
+            elif self.word_feature_extractor == ["LSTM", "HYB"]:
                 self.lstm = self.lstm.cuda()
 
 
@@ -131,6 +129,8 @@ class WordSequence(nn.Module):
             lstm_out, _ = pad_packed_sequence(lstm_out)
             ## lstm_out (seq_len, seq_len, hidden_size)
             feature_out = self.droplstm(lstm_out.transpose(1,0))
+            if self.word_feature_extractor == "HYB":
+                feature_out = self.transformer(feature_out)
         ## feature_out (batch_size, seq_len, hidden_size)
         outputs = self.hidden2tag(feature_out)
         # print("OUTPUT SIZE:", outputs.size())
