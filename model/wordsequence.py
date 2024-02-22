@@ -68,8 +68,11 @@ class WordSequence(nn.Module):
                 self.cnn_drop_list.append(nn.Dropout(data.HP_dropout))
                 self.cnn_batchnorm_list.append(nn.BatchNorm1d(data.HP_hidden_dim))
         # The linear layer that maps from hidden state space to tag space
-        if self.word_feature_extractor in "TRN":
-            self.hidden2tag = nn.Linear(self.input_size, data.label_alphabet_size)
+        if self.word_feature_extractor in ["TRN", "HYB"]:
+            if self.proj_word_emb == -1:  
+                 self.hidden2tag = nn.Linear(self.input_size, data.label_alphabet_size)
+            else:
+                self.hidden2tag = nn.Linear(self.proj_word_emb, data.label_alphabet_size)
         else:
             self.hidden2tag = nn.Linear(data.HP_hidden_dim, data.label_alphabet_size)
 
