@@ -34,6 +34,7 @@ def data_initialization(data: Data):
     data.build_alphabet(data.test_dir)
     data.fix_alphabet()
     if data.use_fasttext_as_model:
+        print("Using fastText as model")
         data.build_fasttext_model(data.word_emb_dir, data.word_emb_dim)
 
 

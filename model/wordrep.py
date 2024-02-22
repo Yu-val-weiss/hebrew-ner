@@ -6,12 +6,14 @@
 import torch
 import torch.nn as nn
 import numpy as np
+
+from utils.data import Data
 from .charbilstm import CharBiLSTM
 from .charbigru import CharBiGRU
 from .charcnn import CharCNN
 
 class WordRep(nn.Module):
-    def __init__(self, data):
+    def __init__(self, data: Data):
         super(WordRep, self).__init__()
         print("build word representation...")
         self.gpu = data.HP_gpu
@@ -38,7 +40,8 @@ class WordRep(nn.Module):
                 exit(0)
         self.embedding_dim = data.word_emb_dim
         self.proj_word = False
-        if data.pretrain_word_embedding is not None and self.embedding_dim > (fr := len(data.pretrain_word_embedding[0])):
+        if ((data.pretrain_word_embedding is not None and self.embedding_dim > (fr := len(data.pretrain_word_embedding[0]))) or 
+        (data.use_fasttext_as_model and data.fasttext_model is not None and self.embedding_dim > (fr := data.fasttext_model.get_dimension()))):
             self.proj_word = True
             self.proj = nn.Linear(fr, self.embedding_dim)
         self.drop = nn.Dropout(data.HP_dropout)
