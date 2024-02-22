@@ -25,6 +25,7 @@ class WordSequence(nn.Module):
         self.bilstm_flag = data.HP_bilstm
         self.lstm_layer = data.HP_lstm_layer
         self.transformer_layer = data.HP_transformer_layer
+        self.proj_word_emb = data.HP_trn_proj_emb
         self.attn_heads = data.HP_transformer_heads
         self.wordrep = WordRep(data)
         self.input_size = data.word_emb_dim
