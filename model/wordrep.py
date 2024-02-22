@@ -38,7 +38,7 @@ class WordRep(nn.Module):
                 exit(0)
         self.embedding_dim = data.word_emb_dim
         self.proj_word = False
-        if self.embedding_dim > (fr := len(data.pretrain_word_embedding[0])):
+        if data.pretrain_word_embedding is not None and self.embedding_dim > (fr := len(data.pretrain_word_embedding[0])):
             self.proj_word = True
             self.proj = nn.Linear(fr, self.embedding_dim)
         self.drop = nn.Dropout(data.HP_dropout)
