@@ -89,7 +89,7 @@ class WordSequence(nn.Module):
                     self.cnn_batchnorm_list[idx] = self.cnn_batchnorm_list[idx].cuda()
             if self.word_feature_extractor in ["TRN", "HYB"]:
                 self.transformer = self.transformer.cuda()
-            elif self.word_feature_extractor == ["LSTM", "HYB"]:
+            elif self.word_feature_extractor in ["LSTM", "HYB"]:
                 self.lstm = self.lstm.cuda()
 
 
