@@ -400,7 +400,7 @@ def make_spans(labels: Iterable[str]) -> List[str]:
         labels (list[str]): list of labels
 
     Returns:
-        list str: format is category@low,high
+        list str: format is category@low,high for B&E, else category@ind for S
     """
     spans: List[str] = []
     for i, label in enumerate(labels):
