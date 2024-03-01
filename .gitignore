@@ -169,5 +169,3 @@ trained_models/
 /*.tar.gz
 
 ncrf_configs/*
-ncrf_hpc_configs/**/*.model
-ncrf_hpc_configs/**/*.dset
