@@ -1,328 +1,269 @@
-"""A field-tested Hebrew tokenizer for dirty texts (ben-yehuda project, bible, cc100, mc4, opensubs, oscar, twitter) focused on multi-word expression extraction."""
-# Credit: https://github.com/eyaler/hebrew_tokenizer
+"""
+    this script tokenize hebrew input in two stages:
+    1) seperate to sentnces
+    2) seperate to words (as further input to Open Univ.'s YAP)
+"""
+# sourced from https://github.com/ygurman/hebrew_tokenizer/blob/master/tokenizer.py
 
-from functools import partialmethod
-import hashlib
 import re
-from typing import Iterable, Iterator, List, Match, Tuple, TypeVar, Union
+from typing import List
 
-from unidecode import unidecode_expect_nonascii
+# special chars and regexes
+# punctuations
+re_paranthesisOpen = r"[\(\[\{\'\"`]"
+re_paranthesisClose = r"[\)\]\}\'\"`]"
+re_sentenceSeperators = r"[\.!?]"
+re_internalPunct = r"[,;:\-&]"
+# no space sequences
+re_noSpaceSequence = r"[^ \t\f\v]+(?:[\n][^ \t\f\v]*)*" #including endline for sentence seperation
+#regexes with quotemarks
+re_nonAcronymQuoteMarks = r"(?P<head>\w)(?P<mark>[\"\'])(?P<tail>\w{2,})" # catches non acronym use of quote marks
+# regexs with non-seperating dots
+re_numbering = r"(?:(?:[א-י]|\d+)\.)+"
+re_heb_dot_acronym = u"(?:(?:[א-ת]\.)+[א-ת]+)" #type: ignore
+re_numeric = r"(?:[+-]?(?:[0-9][0-9.,\/\-:]*)?(?:[0-9])%?)"
+# GENDER_NEUTRAL_SUFFIXES = [".ם",".ן","ת.ים",".ות",".ה",".ית",".ת"]
+# re_genderNeutral = re_hebword + "|".join(GENDER_NEUTRAL_SUFFIXES)
+re_3dotsStyleSequence = re_sentenceSeperators + "{2,}"
+re_legalWithSeperator = r"{0}*{1}{2}*".format(re_paranthesisOpen
+                                             ,"|".join((re_numbering, re_numeric, re_heb_dot_acronym
+                                                        #, re_genderNeutral
+                                                        ))
+                                             ,re_paranthesisClose)
+# url
+re_url = r"[a-z]+://\S+"
+# english words
+re_eng = r"[a-zA-Z][a-zA-Z0-9'.]*"
+# garbage - all non matching characters for tokenizer simplification
+re_garbage = r"[^א-תa-zA-Z0-9!?.,:;\-()\[\]{}]+"
+# hebrew words
+re_hebword = u"(?:[\"\']?[א-ת]+[\"\']?[א-ת]+[\"\']?)"
+re_heb_word_plus = r"[א-ת]([.'`\"\-/\\]?['`]?[א-ת0-9'`])*"
+re_hebrew_dash=re_hebword+"-"+re_hebword
+# definite end of sentences
+re_sentenceEnd = r"(?:{0}{1}\n*)|\n+".format(re_paranthesisClose, re_sentenceSeperators)
 
-
-def cc(s: str) -> str:
-    return '[' + s + ']'
-
-
-def ncc(s: str) -> str:
-    return cc('^' + s)
-
-
-def ncg(s: str) -> str:
-    return '(?:' + s + ')'
-
-
-def nla(s: str) -> str:
-    return '(?!' + s + ')'
-
-
-final_chars = 'ךםןףץ'
-nonfinal_chars = 'כמנפצ'
-to_nonfinal_table = str.maketrans(final_chars, nonfinal_chars)
-to_final_table = str.maketrans(nonfinal_chars, final_chars)
-
-T = TypeVar('T')
-ListOrIterator = Union[List[T], Iterator[T]]
-
-
-class HebTokenizer:
-    """A field-tested Hebrew tokenizer for dirty texts (ben-yehuda project, bible, cc100, mc4, opensubs, oscar, twitter) focused on multi-word expression extraction.
-
-    Nikud and teamim are ignored by default. For ktiv-male use cases you may want to set sanitize='leave_diacritics' to discard words with nikud or teamim.
-    Punctuation is normalized to ASCII (using unidecode).
-    Correct usage of final letters (ךםןףץ) is enforced. Final פ and 'צ (with geresh) are allowed.
-    Minimal word length is 2 proper letters.
-    Same character repetition (שולטתתתת), which is a common form of slang writing, is limited to a maximum of max_char_repetition (default=2),
-        and for the end of words or complete words, a same or more restrictive, maximum max_end_of_word_char_repetition (default=2). Use 0 or None for no limit.
-        Note that these will throw away a small number of words with legitimate repetitions, most notably 'מממ' as in 'מממשלת' ,'מממש' ,'מממן'.
-        allow_mmm (default=True) will specifically allow 'מממ' for the case max_char_repetition==2.
-        Other less common legitimate repetitions include: 'תתת' ,'ששש' ,'נננ' ,'ממממ' ,'כככ' ,'ייי' ,'וווו' ,'ווו' ,'ההה' ,'בבב'.
-    Words having only one or two distinct characters (חיחיחיחיחי), also a common form of slang writing, are limited to lengths up to max_one_two_char_word_len (default=7).
-    Acronyms (צה"ל) and abbreviations ('וכו) are excluded, as well as numerals (42). (TBD)
-    MWE refers to multi-word expression *candidates*, which are tokenized based on hyphen/makaf or surrounding punctuation.
-    Hyphen-based MWE's are discarded if they contain more than max_mwe_hyphens (default=1). Use 0 not allowing hyphens (e.g. for biblical texts) or None for unlimited hyphens.
-    Line opening hyphens as used in conversation and enumeration, can be ignored by allow_line_opening_hyphens (default=True)
-    Strict mode can enforce the absence of extraneous hebrew letters in the same "clause" (strict=HebTokenizer.CLAUSE),
-        sentence (strict=HebTokenizer.SENTENCE) or line (strict=HebTokenizer.LINE) of the MWE. Use 0 or None to not be strict (default=None).
-    Optionally allow number references with allow_number_refs (default=False).
+def text2listOfSentences(conc_sent:str) -> List[str]:
     """
+    splits concatenated string to sentences w/o prior assumptions by classifying optional seperators ("!" "?" "." and "\n")
+    :param conc_sent: input string, assuming may or may not contain line seperators.
+    :return: list of sentences
+    """
+    sentences = []
+    current_sentence = []
 
-    @staticmethod
-    def to_nonfinal(text: str) -> str:
-        return text.translate(to_nonfinal_table)
+    # iterate over sequencese seperated with whitespaces (keep new-line signs)
+    for suspect_sequence in re.findall(pattern=re_noSpaceSequence, string=conc_sent, flags=(re.MULTILINE|re.UNICODE)):
+        current_start = 0
+        # iterate over suspect sequnce
+        i = 0
 
-    @staticmethod
-    def to_final(text: str) -> str:
-        return text.translate(to_final_table)
+        if len(sentences) == 57:
+            x=8
 
-    hebrew_diacritics = '\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7'  # all nikud and teamim except makaf, pasek, sof-pasuk, nun-hafukha
-    hebrew_diacritics_regex = re.compile(cc(hebrew_diacritics) + '+')
-    horizontal_space = ncc('\\S\t\n\r\f\v')
-    pasek_pattern = horizontal_space + '*' + '\u05c0' + horizontal_space + '*'
-    pasek_regex = re.compile(pasek_pattern)
-    sofpasuk_pattern = horizontal_space + '*' + '\u05c3' + horizontal_space + '*'
-    sofpasuk_regex = re.compile(sofpasuk_pattern)
+        while i < len(suspect_sequence) :            # handle definite sentence endings (quotes and paranthesis ending followd by seperator or newline signs)
+            match_end_sentence = re.match(pattern=re_sentenceEnd, string=suspect_sequence[i:])
+            if match_end_sentence:
+                # append previous sequence to sentence
+                current_sentence.append(suspect_sequence[current_start:i])
+                # append charecters seperatly (except for newline)
+                current_sentence.extend(c for c in suspect_sequence[i:i+match_end_sentence.end()] if c!= '\n')
+                # add the current sentence to the sentences list
+                sentences.append(current_sentence)
+                current_sentence = []
+                # update indices
+                i += match_end_sentence.end()
+                current_start = i
+                continue
 
-    hebrew_letters = 'א-ת'
-    nonfinal_letters = 'אבגדהוזחטיכלמנסעפצקרשת'
-    final_letters = to_final.__func__(nonfinal_letters) + 'פ'
-    nonfinal_letters_allowing_geresh = 'גזצ'
-    final_letters_allowing_geresh = to_final.__func__(nonfinal_letters_allowing_geresh) + 'צ'
-    geresh = "'"
-    nonfinal_letter_geresh_pattern = ncg(cc(nonfinal_letters_allowing_geresh) + geresh + '|' + cc(nonfinal_letters))
-    final_letter_geresh_pattern = ncg(cc(final_letters_allowing_geresh) + geresh + '|' + cc(final_letters))
-    non_hebrew_letters_regex = re.compile(ncc(hebrew_letters) + '+')
-    non_hebrew_letters_diacritics_regex = re.compile(ncc(hebrew_letters + hebrew_diacritics) + '+')
-    bad_final_regex = re.compile(cc(final_chars) + cc(nonfinal_letters))
-    hashtag_regex = re.compile('#[\\w\'"\u05be\u05f3\u05f4-]+')  # for performance we will not do unidecode sanitization so we accommodate makaf, geresh, gershaim explicitly
+            # for sentence seperation, only suspect seperators (!?.) matter
+            if suspect_sequence[i] in ["!","?","."]:
+                # handle multiple seperator sequence (by design choice not a sentence seperator #
+                match_multiple_seps = re.match(pattern=re_3dotsStyleSequence,string=suspect_sequence[i:])
+                if match_multiple_seps:
+                    # add previous sequence
+                    current_sentence.append(suspect_sequence[current_start:i])
+                    # add multiple-seperators sequence
+                    current_sentence.append(suspect_sequence[i:i+match_multiple_seps.end()])
+                    # update indices
+                    i += match_multiple_seps.end()
+                    current_start = i
+                    continue
 
-    sentence_sep = '.?!'
-    clause_sep_before_space = sentence_sep + ':;,)"'
-    clause_sep_after_space = '("'
-    clause_sep_between_spaces = '-'
-    clause_sep_pattern = '\t|' + cc(clause_sep_before_space) + '\\s|\\s' + cc(clause_sep_after_space) + '|\\s' + cc(clause_sep_between_spaces) + '\\s'
-    clause_sep_regex = re.compile(clause_sep_pattern)
-    sentence_sep_regex = re.compile(cc(sentence_sep))
+                # seperator prior to quote mark doesn't end a sentence (while in quote) - i.e. no characters after the quotemark
+                match_sep_before_closing_paranthesis = re.match(pattern=re_sentenceSeperators+re_paranthesisClose+"+$",string=suspect_sequence[i:])
+                if match_sep_before_closing_paranthesis:
+                    # add previous sequence
+                    current_sentence.append(suspect_sequence[current_start:i])
+                    # add seperator and closing paranthesis
+                    current_sentence.extend([c for c in suspect_sequence[i+match_sep_before_closing_paranthesis.start():i+match_sep_before_closing_paranthesis.end()]])
+                    #update indices
+                    i += match_sep_before_closing_paranthesis.end()
+                    current_start = i
 
-    mwe_words_sep = ' -'
-    mwe_words_sep_regex = re.compile(cc(mwe_words_sep))
+                # assume [?!] in middle of string indicate sentence seperation (or "." before whitespace)
+                elif suspect_sequence[i] in ["!", "?"] or ((suspect_sequence[i] == ".") and (i == len(suspect_sequence) - 1)):
+                    # add previous sequence
+                    current_sentence.append(suspect_sequence[current_start:i])
+                    # add seperator
+                    current_sentence.append(suspect_sequence[i])
+                    # add the current sentence to the sentences
+                    sentences.append(current_sentence)
+                    current_sentence = []
+                    # update indices
+                    i += 1
+                    current_start = i
+                    continue
 
-    mmm_pattern = '(?<!(?<!m)mmm)'.replace('m', 'מ')
-    line_opening_hyphen_pattern = '((?:^|\n|\r)\\s*-{1,2})(?=\\w)'
-    line_opening_hyphen_regex = re.compile(line_opening_hyphen_pattern, flags=re.MULTILINE)
+                # if seperator is "." check if it's a part of a legal token or a sentence seperator
+                else:
+                    match_legal_token_with_dots = re.match(pattern=re_legalWithSeperator,string=suspect_sequence[current_start:])
+                    # if a part of legal token (dotted acronym, numerical, numbering, gender-neutral)
+                    if match_legal_token_with_dots:
+                        # add previous sequence
+                        current_sentence.append(suspect_sequence[current_start:match_legal_token_with_dots.end()])
+                        # update indices
+                        i = current_start + match_legal_token_with_dots.end()
+                        current_start = i
+                        continue
+                    # if not part of legal token, act as with seperator
+                    else:
+                        # add previous sequence
+                        current_sentence.append(suspect_sequence[current_start:i])
+                        # add seperator
+                        current_sentence.append(suspect_sequence[i])
+                        # add sentence to list
+                        sentences.append(current_sentence)
+                        current_sentence = []
+                        # update indices
+                        i+= 1
+                        current_start = i
+                        continue
+            # if character is not a seperator move on
+            i += 1
 
-    CLAUSE = 1
-    SENTENCE = 2
-    LINE = 3
+        # reching the suspect sequence end add the leftover to the sentence and finish
+        if current_start < len(suspect_sequence) - 1:
+            current_sentence.append(suspect_sequence[current_start:])
 
-    default_max_char_repetition = 2
-    default_max_end_of_word_char_repetition = 2
-    default_allow_mmm = True
-    default_max_one_two_char_word_len = 7  # based on Hspell. e.g. שישישיי
-    default_max_mwe_hyphens = 1
-    default_allow_line_opening_hyphens = True
-    default_allow_number_refs = False
-    default_strict = None
-    default_bad_final_exceptions = 'לםרבה', 'אנשיםות', 'יוםיום', 'סוףסוף'  # note: these exceptions are only for finding bad finals. the tokenizer will still ignore them
+    return [" ".join(sent) for sent in sentences]
 
-    def __init__(self, sanitize: Union[bool, str] = True, max_char_repetition: int = default_max_char_repetition, max_end_of_word_char_repetition: int = default_max_end_of_word_char_repetition, allow_mmm: bool = default_allow_mmm, max_one_two_char_word_len: int = default_max_one_two_char_word_len, max_mwe_hyphens: int = default_max_mwe_hyphens, allow_line_opening_hyphens: bool = default_allow_line_opening_hyphens, allow_number_refs: bool = default_allow_number_refs) -> None:
-        self.default_sanitize = sanitize
-        self.max_char_repetition = max_char_repetition
-        self.max_end_of_word_char_repetition = max_end_of_word_char_repetition
-        self.allow_mmm = allow_mmm
-        self.max_one_two_char_word_len = max_one_two_char_word_len
-        self.max_mwe_hyphens = max_mwe_hyphens
-        self.allow_line_opening_hyphens = allow_line_opening_hyphens
-        self.allow_number_refs = allow_number_refs
+# handler functions for the Scanner (used as lambdas for regex and function in Scanner)
+def handleUrl(s,t): return ('URL',t)
+def handleEng(s,t): return ('ENG',t)
+def handleHeb(s,t):
+    # flip order in a non acronym quote marks
+    match_nonAcronymQuoteMark = re.match(pattern=re_nonAcronymQuoteMarks, string=t, flags=(re.UNICODE))
+    if match_nonAcronymQuoteMark:
+        t = " ".join((match_nonAcronymQuoteMark.group("mark"),match_nonAcronymQuoteMark.group("head")+match_nonAcronymQuoteMark.group("tail")))
+    # seperate inner dashes
+    t = t.replace("-", " - ")
+    return ('HEB',t)
 
-        mmm = ''
-        neg_rep = ''
-        neg_end_rep = ''
-        short_or_diverse = ''
-        cch = cc(self.hebrew_letters)
-        cchd = cc(self.hebrew_letters + self.hebrew_diacritics + self.geresh)
-        ncch = ncc(self.hebrew_letters)
-        if max_char_repetition == 2 and allow_mmm:
-            mmm = self.mmm_pattern
-        if max_char_repetition:
-            neg_rep = nla('(?P=ref_char0){' + str(max_char_repetition) + '}' + mmm)
-        if max_end_of_word_char_repetition:
-            if max_char_repetition:
-                assert max_end_of_word_char_repetition <= max_char_repetition, f'max_end_of_word_char_repetition={max_end_of_word_char_repetition} cannot be greater than max_char_repetition={max_char_repetition}'
-            neg_end_rep = nla('(?P=ref_char0){' + str(max_end_of_word_char_repetition) + '}' + ncg('$|' + ncch))
-        if max_one_two_char_word_len:
-            short_or_diverse = '(?=' + cch + '{1,' + str(max_one_two_char_word_len) + '}\\b|' + cch + '*(?P<ref_char1>' + cch + ')(?!(?P=ref_char1))(?P<ref_char>' + cch + ')' + cch + '*(?!(?P=ref_char1))(?!(?P=ref_char))' + cch + '+)'
-        if self.allow_number_refs:
-            forbidden_trailing = "[^\\W\\d]"
-        else:
-            forbidden_trailing = "[\\w]"
-        forbidden_trailing += '|' + cchd
+def handleNonAcronymQuoteMark(s,t):
+    # flip the order of the quote-marks to prevent segmentation mistakes in YAP
+    match = re.match(pattern=re_nonAcronymQuoteMarks,string=t,flags=(re.UNICODE))
+    t = " ".join((match.group("mark"), match.group("head")+match.group("tail"))) #type: ignore
+    return('HEB',t)
 
-        self.word_pattern = '(?<!' + cchd + '[^\\s-])\\b' + '(?<!' + cc(self.hebrew_diacritics) + ')' + short_or_diverse + ncg('(?P<ref_char0>' + self.nonfinal_letter_geresh_pattern + ')' + neg_rep + neg_end_rep) + '+' + self.final_letter_geresh_pattern + nla(forbidden_trailing) + nla('[^\\s-]' + cch) + nla('-' + ncg('$|' + ncch))
+def handleNum(s,t):
+    if (t[-1] == "%"):
+        t = t[:-1] + " %"
+    return ('NUM',t)
 
-        reuse_cnt = {}
+def handlePunct(s,t): return ('PUNCT',t)
+def handleGarbage(s,t): return ('GARBAGE', t)
 
-        def reuse_regex_pattern(pattern: str) -> str:
-            if pattern not in reuse_cnt:
-                reuse_cnt[pattern] = 0
-            else:
-                reuse_cnt[pattern] += 1
-            return re.sub('(\\(?P[<=])', '\\1' + '_'*reuse_cnt[pattern], pattern)
+# scanner - a built-in re package tool
+scanner = re.Scanner([ #type: ignore
+    (r"\s+", None),
+    (re_url, handleUrl),
+    (re_legalWithSeperator, handleHeb),
+    (re_nonAcronymQuoteMarks, handleNonAcronymQuoteMark),
+    (re_heb_word_plus,handleHeb),
+    (re_eng, handleEng),
+    (re_numeric, handleNum),
+    (re_numbering, handleNum),
+    (re_paranthesisOpen, handlePunct),
+    (re_paranthesisClose, handlePunct),
+    (re_3dotsStyleSequence, handlePunct),
+    (re_sentenceSeperators, handlePunct),
+    (re_internalPunct, handlePunct),
+    (re_garbage, handleGarbage)
+])
 
-        max_mwe_hyphens_pattern = ''
-        if max_mwe_hyphens != 0:
-            max_mwe_hyphens_str = ''
-            if max_mwe_hyphens is not None:
-                max_mwe_hyphens_str = str(max_mwe_hyphens)
-            max_mwe_hyphens_pattern = '|' + ncg('-' + reuse_regex_pattern(self.word_pattern)) + '{1,' + max_mwe_hyphens_str + '}'
-        self.mwe_pattern = '(?<!-)' + reuse_regex_pattern(self.word_pattern) + ncg(ncg(' ' + reuse_regex_pattern(self.word_pattern)) + '+' + max_mwe_hyphens_pattern) + '(?!-)'
-        self.line_with_strict_mwe_pattern = '^' + ncch + '*' + self.mwe_pattern + ncch + '*$'
+def tokenize(sent:str):
+    tok = sent
+    parts, remainder = scanner.scan(tok)
+    assert (not remainder)
+    return parts
 
-        self.word_regex = re.compile(self.word_pattern)
-        self.mwe_regex = re.compile(self.mwe_pattern)
-        self.line_with_strict_mwe_regex = re.compile(self.line_with_strict_mwe_pattern, flags=re.MULTILINE)
-
-    @classmethod
-    def remove_diacritics(cls, text: str) -> str:
-        return cls.hebrew_diacritics_regex.sub('', text)
-
-    @classmethod
-    def sanitize(cls, text: str, remove_diacritics: Union[bool, str] = True, bible_makaf: bool = False) -> str:
-        if remove_diacritics and remove_diacritics != 'leave_diacritics':
-            assert not isinstance(remove_diacritics, str), f'Unsupported remove_diacritics value: {remove_diacritics}'
-            text = cls.remove_diacritics(text)
-        if bible_makaf:
-            text = text.replace('\u05be', ' ')  # for biblical texts makaf is a taam and does not signify hyphenation
-        text = cls.pasek_regex.sub(' ', text)  # pasek and any surrounding whitespace signifies a space between words
-        text = cls.sofpasuk_regex.sub('. ', text)  # sof-pasuk and any surrounding whitespace signifies an end of a sentence
-        return cls.non_hebrew_letters_diacritics_regex.sub(lambda x: unidecode_expect_nonascii(x.group(), errors='preserve'), text)
-
-    @classmethod
-    def find_bad_final(cls, text: str, remove_diacritics: bool = True, exceptions: Iterable[str] = default_bad_final_exceptions, allow_hashtag: bool = True, ret_all: bool = False) -> Union[Union[Match[str], None], List[str]]:  # this could help detect text containing badly fused words or lines
-        if remove_diacritics:
-            text = cls.remove_diacritics(text)
-        if allow_hashtag:
-            text = cls.hashtag_regex.sub('', text)
-        for x in exceptions:
-            text = text.replace(x, '')
-        if ret_all:
-            return cls.bad_final_regex.findall(text)
-        return cls.bad_final_regex.search(text)
-
-    def is_word(self, text: str, sanitize: Union[bool, str, None] = None) -> bool:
-        if sanitize is None:
-            sanitize = self.default_sanitize
-        if sanitize:
-            text = self.sanitize(text, remove_diacritics=sanitize)
-        return bool(self.word_regex.fullmatch(text))
-
-    def get_words(self, text: str, sanitize: Union[bool, str, None] = None, iterator: bool = False) -> ListOrIterator[str]:
-        if sanitize is None:
-            sanitize = self.default_sanitize
-        if sanitize:
-            text = self.sanitize(text, remove_diacritics=sanitize)
-        result = (match.group() for match in self.word_regex.finditer(text))
-        if not iterator:
-            result = list(result)
-        return result
-
-    def has_word(self, text: str, sanitize: Union[bool, str, None] = None) -> bool:
-        for _ in self.get_words(text, sanitize=sanitize, iterator=True):
-            return True
-        return False
-
-    def is_mwe(self, text: str, sanitize: Union[bool, str, None] = None) -> bool:
-        if sanitize is None:
-            sanitize = self.default_sanitize
-        if sanitize:
-            text = self.sanitize(text, remove_diacritics=sanitize)
-        return bool(self.mwe_regex.fullmatch(text))
-
-    def is_word_or_mwe(self, text: str, sanitize: Union[bool, str, None] = None) -> bool:
-        if sanitize is None:
-            sanitize = self.default_sanitize
-        if sanitize:
-            text = self.sanitize(text, remove_diacritics=sanitize)
-        return self.is_word(text, sanitize=False) or self.is_mwe(text, sanitize=False)
-
-    def get_mwe(self, text: str, sanitize: Union[bool, str, None] = None, strict: Union[str, None] = default_strict, iterator: bool = False) -> ListOrIterator[str]:
-        if sanitize is None:
-            sanitize = self.default_sanitize
-        if sanitize:
-            text = self.sanitize(text, remove_diacritics=sanitize)
-        if self.allow_line_opening_hyphens:
-            text = self.line_opening_hyphen_regex.sub('\\1 ', text)
-        if strict:
-            if strict == self.CLAUSE:
-                text = '\n'.join(self.clause_sep_regex.split(text))
-            elif strict == self.SENTENCE:
-                text = '\n'.join(self.sentence_sep_regex.split(text))
-            else:
-                assert strict == self.LINE, f'Unsupported strict mode: {strict}'
-            result = (self.mwe_regex.search(match.group()).group() for match in self.line_with_strict_mwe_regex.finditer(text))
-        else:
-            result = (match.group() for match in self.mwe_regex.finditer(text))
-        if not iterator:
-            result = list(result)
-        return result
-
-    def get_mwe_words(self, text: str, sanitize: Union[bool, str, None] = None, strict: Union[str, None] = default_strict, flat: bool = False, iterator: bool = False) -> Union[ListOrIterator[str], ListOrIterator[List[str]]]:
-        result = (self.mwe_words_sep_regex.split(mwe) for mwe in self.get_mwe(text, sanitize=sanitize, strict=strict))
-        if flat:
-            result = (word for word_list in result for word in word_list)
-        if not iterator:
-            result = list(result)
-        return result
-
-    def get_mwe_ngrams(self, text: str, n: int, sanitize: Union[bool, str, None] = None, strict: Union[str, None] = default_strict, as_strings: bool = False, flat: bool = False, iterator: bool = False) -> Union[ListOrIterator[str], ListOrIterator[Tuple[str]], ListOrIterator[List[str]], ListOrIterator[List[Tuple[str]]]]:
-        words = self.get_mwe_words(text, sanitize=sanitize, strict=strict, flat=False, iterator=iterator)
-        result = ([' '.join(word_list[i : i + n]) if as_strings else tuple(word_list[i : i + n]) for i in range(len(word_list) - n + 1)] for word_list in words if len(word_list) >= n)
-        if flat:
-            result = (ngram for ngram_list in result for ngram in ngram_list)
-        if not iterator:
-            result = list(result)
-        return result
-
-    get_mwe_bigrams = partialmethod(get_mwe_ngrams, n=2)
+def tokenize_sentences(input_sentences:List[str]) -> List[List[str]]:
+    """
+    an re.Scanner based tokenizer. based on Yoav Goldberg's Hebrew Tokenizer (2010) - https://www.cs.bgu.ac.il/~yoavg/software/hebtokenizer/
+    seperates input text to sentences as list of words using regular expressions
+    :param input_sentences: list of sentences in Hebrew (and possibly some English words or characters)
+    :return: list of sentences as list of words
+    """
+    tokenized_sentences = []
+    for sent in input_sentences:
+        tokenized_sentences.append([tok for (which,tok) in tokenize(sent)])
+    return tokenized_sentences
 
 
-to_nonfinal = HebTokenizer.to_nonfinal
-to_final = HebTokenizer.to_final
-remove_diacritics = HebTokenizer.remove_diacritics
-sanitize = HebTokenizer.sanitize
-find_bad_final = HebTokenizer.find_bad_final
+def listOfSents2File(sentences, path):
+    """
+    writes tokenized sentences (seperated by new lines) to output path
+    :param sentences: list of sentences (each as list of words)
+    :param path: output file path
+    """
+    with open(file=path, mode='wt', encoding='utf8') as f:
+        for sent in sentences:
+            f.write(" ".join(sent) + "\n")
 
 
-if __name__ == '__main__':
+def parseArgs():
+    """
+    handle program arguments
+    :return: input path, out path and boolean indicating sentence seperation
+    """
+    from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+    parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument("input", help="textual input file", metavar="FILE")
+    parser.add_argument("output", nargs='?', help="textual output file. defaults to input file with \".tokenized\" "
+                                                  "suffix", metavar="FILE")
+    parser.add_argument("-s", "--seperate", dest="seperate", action="store_true",help="indicates that the script "
+                                                                                      "should seperate the input to "
+                                                                                      "sentences. NOTICE: RECOMMENDED "
+                                                                                      "IF INPUT CONSISTS OF "
+                                                                                      "SENTENCES WITHOUT 'NEWLINE' "
+                                                                                      "BETWEEN THEM "
+                        , required=False, default=False)
+    args = parser.parse_args()
+    input_path = args.input
+    output_path = args.output if args.output else (input_path + ".tokenized")
 
-    t = 'א בְּרֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַשָּׁמַ֖יִם וְאֵ֥ת הָאָֽרֶץ. ב וְהָאָ֗רֶץ הָיְתָ֥ה תֹ֙הוּ֙ וָבֹ֔הוּ וְחֹ֖שֶׁךְ עַל־פְּנֵ֣י תְה֑וֹם, וְר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל־פְּנֵ֥י הַמָּֽיִם. ג וַיֹּ֥אמֶר אֱלֹהִ֖ים: "יְהִ֣י א֑וֹר", וַֽיְהִי־אֽוֹר. ד וַיַּ֧רְא אֱלֹהִ֛ים אֶת־הָא֖וֹר כִּי־ט֑וֹב, וַיַּבְדֵּ֣ל אֱלֹהִ֔ים בֵּ֥ין הָא֖וֹר וּבֵ֥ין הַחֹֽשֶׁךְ. ה וַיִּקְרָ֨א אֱלֹהִ֤ים ׀ לָאוֹר֙ "י֔וֹם" וְלַחֹ֖שֶׁךְ קָ֣רָא "לָ֑יְלָה", וַֽיְהִי־עֶ֥רֶב וַֽיְהִי־בֹ֖קֶר י֥וֹם אֶחָֽד.'
+    return input_path, output_path, args.seperate
 
-    output = ''
+def main():
+    # handle input file
+    _input_path, _output_path, _seperate2sentences = parseArgs()
 
-    def print_with_len(lst):
-        global output
-        output += str(lst) + '\n'
-        print(lst, len(lst))
+    # read input file and handle windows-originated newline seperators and double single-quote marks with double quote mark
+    input_sentences = open(file=_input_path, mode='rt', encoding='utf8').read().replace('\r', '').replace("\'\'", "\"")
 
-    saved_hash = '8aae9ff77125d5e0516b8f869c06f023'
+    # seperate to sentences (if "-s" flag is off, assume sentences seperated with "\n"
+    if _seperate2sentences:
+        input_sentences = text2listOfSentences(input_sentences)
+    else:
+        input_sentences = input_sentences.split('\n')
 
-    print_with_len(t)
-    print_with_len(to_final(t))
-    print_with_len(to_nonfinal(t))
-    print_with_len(remove_diacritics(t))
-    print('bad_final=', find_bad_final(t))
-    print('bad_final=', find_bad_final(t, ret_all=True))
-    print_with_len(sanitize(t))
-    print_with_len(HebTokenizer.sanitize(t))
+    # tokenize input
+    tokenized_sentences = tokenize_sentences(input_sentences)
 
-    heb_tokenizer = HebTokenizer()
-    print_with_len(heb_tokenizer.sanitize(t))
-    print_with_len(heb_tokenizer.get_words(t))
-    print('has_word=', heb_tokenizer.has_word(t))
-    print('\nmwe and mwe words:')
-    print_with_len(heb_tokenizer.get_mwe(t))
-    print_with_len(heb_tokenizer.get_mwe_words(t))
-    print_with_len(heb_tokenizer.get_mwe_words(t, flat=True))
-    print('\nbigrams:')
-    print_with_len(heb_tokenizer.get_mwe_bigrams(t))
-    print_with_len(heb_tokenizer.get_mwe_bigrams(t, as_strings=True))
-    print_with_len(heb_tokenizer.get_mwe_bigrams(t, flat=True))
-    print_with_len(heb_tokenizer.get_mwe_bigrams(t, as_strings=True, flat=True))
-    print('\ntrigrams:')
-    print_with_len(heb_tokenizer.get_mwe_ngrams(t, n=3))
-    print_with_len(heb_tokenizer.get_mwe_ngrams(t, n=3, as_strings=True))
-    print_with_len(heb_tokenizer.get_mwe_ngrams(t, n=3, flat=True))
-    print_with_len(heb_tokenizer.get_mwe_ngrams(t, n=3, as_strings=True, flat=True))
-    print_with_len(heb_tokenizer.get_mwe_ngrams(t, n=3, as_strings=True, flat=True))
+    # write tokenized output to files
+    listOfSents2File(sentences = tokenized_sentences, path = _output_path)
 
-    myhash = hashlib.md5(output.encode()).hexdigest()
-    assert myhash == saved_hash, myhash
+
+if  __name__ == '__main__':
+    main()
