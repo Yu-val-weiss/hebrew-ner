@@ -1,120 +1,63 @@
+from enum import Enum
 import os
+import tempfile
 import time
-from typing import Dict, List, Literal, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple
 import torch
 from model.seqlabel import SeqLabel
-from ncrf_main import evaluate, load_model_decode
-from utils import yap, ner, functions
+from ncrf_main import evaluate
+from utils import ner, yap
 from utils.data import Data
-from utils.tokenizer import HebTokenizer
 from utils.yap_graph import YapGraph
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 import uvicorn
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
-import fasttext
+from utils.tokenizer import text2listOfSentences, tokenize_sentences
 
+class ModelEnum(str, Enum):
+    token_single = 'token_single'
+    token_multi = 'token_multi'
+    morph = 'morph'
+    hybrid = 'hybrid'
+    token_single_lstm_ftam = 'token_single_lstm_ftam'
 
 
 models: Dict[str, Tuple[Data, SeqLabel]] = {}
-
-tokenizer_holder: List[HebTokenizer] = []
 
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # load tokenizer
-    tokenizer_holder.append(HebTokenizer(max_char_repetition=0))
-    
     # load ML models
-    data = Data()
-    data.HP_gpu = torch.cuda.is_available()
-    data.read_config('api_configs/trn_tok_sing.conf')
-    data.load(data.dset_dir)
-    data.read_config('api_configs/trn_tok_sing.conf') # need to reload for model dir and stuff like that
-    if not torch.cuda.is_available():
-        data.HP_gpu = False
-    model = SeqLabel(data)
-    if torch.cuda.is_available():
-        model.load_state_dict(torch.load(data.load_model_dir)) # type: ignore
-    else:
-        model.load_state_dict(torch.load(data.load_model_dir, map_location=torch.device('cpu'))) # type: ignore
+    for model in ModelEnum:
+        path = os.path.join("api_configs", f"{model}.conf")
+        if not os.path.exists(path):
+            continue
+        print(f"Creating model {model}...")
+        data = Data()
+        data.HP_gpu = torch.cuda.is_available()
+        data.read_config('api_configs/token_single.conf')
+        data.load(data.dset_dir)
+        data.read_config('api_configs/token_single.conf') # need to reload for model dir and stuff like that
+        if not torch.cuda.is_available():
+            data.HP_gpu = False
+        model = SeqLabel(data)
+        if torch.cuda.is_available():
+            model.load_state_dict(torch.load(data.load_model_dir)) # type: ignore
+        else:
+            model.load_state_dict(torch.load(data.load_model_dir, map_location=torch.device('cpu'))) # type: ignore
 
-    models['token_single'] = (data, model)
+        models['token_single'] = (data, model)
     
     yield
-    del tokenizer_holder[0]
     models.clear()
     
 
 app = FastAPI(debug=True, lifespan=lifespan)
 
-
-def read_instance(in_words, word_alphabet, char_alphabet, number_normalized, max_sent_length, char_padding_size=-1, char_padding_symbol = '</pad>', fasttext: Union[None, fasttext.FastText._FastText] = None):
-    '''
-    in_words: input words
-    '''
-    instance_texts = []
-    instance_ids = []
-    chars = []
-    labels = []
-    word_Ids = []
-    char_Ids = []
-    label_Ids = []
-    
-    for word in in_words:
-        if number_normalized:
-            word = functions.normalize_word(word)
-        if fasttext is not None:
-            word_Ids.append(fasttext.get_word_vector(word))
-        else:
-            word_Ids.append(word_alphabet.get_index(word))
-        ## get char
-        char_list = []
-        char_Id = []
-        for char in word:
-            char_list.append(char)
-        if char_padding_size > 0:
-            char_number = len(char_list)
-            if char_number < char_padding_size:
-                char_list = char_list + [char_padding_symbol]*(char_padding_size-char_number)
-            assert(len(char_list) == char_padding_size)
-        else:
-            ### not padding
-            pass
-        for char in char_list:
-            char_Id.append(char_alphabet.get_index(char))
-        chars.append(char_list)
-        char_Ids.append(char_Id)
-    if (len(in_words) > 0) and ((max_sent_length < 0) or (len(in_words) < max_sent_length)) :
-        instance_texts.append([in_words, [[]], chars, [['O']*len(in_words)]])
-        instance_ids.append([word_Ids, [[]], char_Ids, [[0]*len(in_words)]])
-        words = []
-        chars = []
-        labels = []
-        word_Ids = []
-        char_Ids = []
-        label_Ids = []
-    return instance_texts, instance_ids
-
-
-def predict(data: Data, model: SeqLabel, in_words: List[str]):
-    data.raw_texts, data.raw_Ids = read_instance(in_words, data.word_alphabet, data.char_alphabet, data.number_normalized, data.MAX_SENTENCE_LENGTH, fasttext=data.fasttext_model)
-    name = 'raw'
-    print("Decode %s data, nbest: %s ..."%(name, data.nbest))
-    start_time = time.time()
-    speed, acc, p, r, f, pred_results, pred_scores = evaluate(data, model, name, data.nbest)
-    end_time = time.time()
-    time_cost = end_time - start_time
-    if data.seg:
-        print("%s: time:%.2fs, speed:%.2fst/s; acc: %.4f, p: %.4f, r: %.4f, f: %.4f"%(name, time_cost, speed, acc, p, r, f))
-    else:
-        print("%s: time:%.2fs, speed:%.2fst/s; acc: %.4f"%(name, time_cost, speed, acc))
-    return pred_results, pred_scores
-    
-    
+  
 def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label_delim='^', fallback=False):
     splitting = ner.make_multi_splitting_df(multi_df, multi_label_delim)
     valid_edges: Set[Tuple[int, int, int, int]] = set()
@@ -137,23 +80,86 @@ def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label
     return lattice_df[lattice_df[cols_to_filter].apply(tuple, axis=1).isin(valid_edges)].reset_index(drop=True)
     
 
-class Query(BaseModel):
+class NERQuery(BaseModel):
     text: str
-    model: Literal['token_single', 'token_multi', 'morph', 'hybrid'] = 'token_single'
+    model: ModelEnum = ModelEnum.token_single
+    
+
+class NERLabelledToken(BaseModel):
+    token: str
+    label: str
+    
+class NERResponse(BaseModel):
+    prediction: List[List[NERLabelledToken]]
+    
+class TokenizeQuery(BaseModel):
+    text: str
+
+class NamedTemporary:
+    def __enter__(self) -> str:
+        self.fd, self.fp = tempfile.mkstemp(text=True)
+        return self.fp
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.close(self.fd)
 
 
 @app.get('/')
 def home():
     return "OK"
 
+@app.get('/test')
+def test():
+    with NamedTemporary() as tmpfile:
+        return (tmpfile)
+
+@app.post("/tokenize")
+def api_tokenize(q: TokenizeQuery):
+    sents = text2listOfSentences(q.text)
+    return sents, tokenize_sentences(sents)
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
 
 @app.post('/predict')
-def api_predict(q: Query):
-    tokenizer = tokenizer_holder[0]
+def api_predict(q: NERQuery) -> NERResponse:
+    if q.model not in models:
+        raise HTTPException(status_code=404, detail=f"The model '{q.model}' has not been loaded, please try one of {list(models.keys())}")
     data, model = models[q.model]
-    print(tokenizer.get_words(q.text))
-    return predict(data, model, list(tokenizer.get_words(q.text)))
+    
+    tt = tokenize_sentences(text2listOfSentences(q.text))
+    with NamedTemporary() as tmpfile:
+        with open(tmpfile, 'w') as tmpf:
+            for sent in tt:
+                tmpf.write('\n'.join(map(lambda x: x + '\tO',sent)))
+                tmpf.write('\n\n')
+        
+        f = open(tmpfile, 'r')
 
+        file_contents = f.read()
+
+        print (file_contents)
+        
+        f.close()
+        
+        data.raw_dir = tmpfile
+        data.generate_instance('raw')
+        speed, pred_results, pred_scores= evaluate(data, model, 'raw', skip_eval=True) # type: ignore
+        
+    prediction_result = []
+    for row1, row2 in zip(tt, pred_results): #type: ignore
+        tokens_labels = [NERLabelledToken(token=t, label=l) for t, l in zip(row1, row2)]
+        prediction_result.append(tokens_labels)
+
+    return NERResponse(
+        prediction=prediction_result
+    )
 
 @app.get('/healthcheck')
 def health():
