@@ -1,10 +1,12 @@
+import os
 import time
-from typing import List, Set, Tuple, Union
+from typing import Dict, List, Literal, Set, Tuple, Union
 import torch
 from model.seqlabel import SeqLabel
 from ncrf_main import evaluate, load_model_decode
 from utils import yap, ner, functions
 from utils.data import Data
+from utils.tokenizer import HebTokenizer
 from utils.yap_graph import YapGraph
 import pandas as pd
 from fastapi import FastAPI
@@ -14,10 +16,19 @@ from pydantic import BaseModel
 import fasttext
 
 
-models = {}
+
+models: Dict[str, Tuple[Data, SeqLabel]] = {}
+
+tokenizer_holder: List[HebTokenizer] = []
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # load tokenizer
+    tokenizer_holder.append(HebTokenizer(max_char_repetition=0))
+    
+    # load ML models
     data = Data()
     data.HP_gpu = torch.cuda.is_available()
     data.read_config('api_configs/trn_tok_sing.conf')
@@ -34,7 +45,9 @@ async def lifespan(app: FastAPI):
     models['token_single'] = (data, model)
     
     yield
+    del tokenizer_holder[0]
     models.clear()
+    
 
 app = FastAPI(debug=True, lifespan=lifespan)
 
@@ -124,15 +137,22 @@ def prune_lattices(lattice_df: pd.DataFrame, multi_df: pd.DataFrame, multi_label
     return lattice_df[lattice_df[cols_to_filter].apply(tuple, axis=1).isin(valid_edges)].reset_index(drop=True)
     
 
+class Query(BaseModel):
+    text: str
+    model: Literal['token_single', 'token_multi', 'morph', 'hybrid'] = 'token_single'
+
+
 @app.get('/')
 def home():
     return "OK"
 
 
-@app.get('/test')
-def test():
-    data, model = models['token_single']
-    return predict(data, model, ['גנו'])
+@app.post('/predict')
+def api_predict(q: Query):
+    tokenizer = tokenizer_holder[0]
+    data, model = models[q.model]
+    print(tokenizer.get_words(q.text))
+    return predict(data, model, list(tokenizer.get_words(q.text)))
 
 
 @app.get('/healthcheck')
