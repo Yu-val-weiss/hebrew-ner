@@ -9,6 +9,8 @@ from utils import yap
 import pandas as pd
 from utils.eval.consts import MORPH, MULTI, TOK
 
+NER_DF_COLUMNS = ['SentNum', 'WordIndex', 'Word', 'Label'] 
+
 class WordLabel(NamedTuple):
     word: str
     label: str
@@ -72,12 +74,10 @@ def read_file_to_sentences_df(file: str, comment_delim='#', word_label_delim=' '
                 else:
                     curr_sent += 1
                     word_ind = 0
-      
-    columns = ['SentNum', 'WordIndex', 'Word', 'Label'] 
                 
     return pd.DataFrame(
         data = sent_iter(),
-        columns = columns
+        columns = NER_DF_COLUMNS
     )
     
 
