@@ -21,7 +21,7 @@ class ModelEnum(str, Enum):
     token_multi = 'token_multi'
     morph = 'morph'
     hybrid = 'hybrid'
-    # morph_lstm_ftam = 'morph_lstm_ftam'
+    morph_lstm_ftam = 'morph_lstm_ftam'
 
 
 models: Dict[str, Tuple[Data, SeqLabel]] = {}
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
         data = Data()
         data.HP_gpu = torch.cuda.is_available()
         data.read_config(f'api_configs/{model_name}.conf')
-        data.load(data.dset_dir)
+        data.load(data.dset_dir, fasttext_model_dir='fasttext/wiki.he.bin')
         data.read_config(f'api_configs/{model_name}.conf') # need to reload for model dir and stuff like that
         if not torch.cuda.is_available():
             data.HP_gpu = False
@@ -106,15 +106,10 @@ class NamedTemporary:
 def home():
     return "OK"
 
-@app.get('/test')
-def test():
-    with NamedTemporary() as tmpfile:
-        return (tmpfile)
-
 @app.post("/tokenize")
 def api_tokenize(q: TokenizeQuery):
     sents = text2listOfSentences(q.text)
-    return sents, tokenize_sentences(sents)
+    return tokenize_sentences(sents)
 
 
 @app.middleware("http")
@@ -264,8 +259,5 @@ def api_predict(q: NERQuery) -> NERResponse:
 def health():
     return "OK"
 
-
-
-
 if __name__ == '__main__':
-    uvicorn.run('ner_app:app', port=5000, reload=True)
+    uvicorn.run('ner_app:app', port=5000, reload=True, reload_excludes=["ner_app_tests.py"])
