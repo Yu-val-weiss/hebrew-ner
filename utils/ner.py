@@ -410,7 +410,10 @@ def make_spans(labels: Iterable[str]) -> List[str]:
         if pos == 'S' or pos == 'B':
             spans.append(f'{cat}@{i}')
         elif pos == 'E':
-            spans[-1] += f',{i}'
+            if len(spans) == 0 or ',' in spans[-1]:
+                spans.append(f'{cat}@,{i}')
+            else:
+                spans[-1] += f',{i}'
     return spans
 
 
