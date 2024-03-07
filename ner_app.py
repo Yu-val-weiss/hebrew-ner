@@ -97,12 +97,11 @@ class TokenizeQuery(BaseModel):
 
 class NamedTemporary:
     def __enter__(self) -> str:
-        self.fd, self.fp = tempfile.mkstemp(text=True, prefix='heb-ner-tmp-')
-        return self.fp
+        self.file = tempfile.NamedTemporaryFile(prefix='heb-ner-tmp-', encoding='utf-8', mode="r")
+        return self.file.name
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        os.close(self.fd)
-        os.remove(self.fp)
+        self.file.close()
 
 
 @app.get('/')
@@ -143,7 +142,7 @@ def standard_predict(data: Data, model: SeqLabel, text: List[List[str]]) -> NERR
     print(pred_results)
         
     prediction_result = []
-    for row1, row2 in zip(tt, pred_results): #type: ignore
+    for row1, row2 in zip(text, pred_results): 
         tokens_labels = [NERLabelledToken(token=t, label=l) for t, l in zip(row1, row2)]
         prediction_result.append(tokens_labels)
 
