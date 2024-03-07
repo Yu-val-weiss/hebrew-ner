@@ -97,11 +97,12 @@ class TokenizeQuery(BaseModel):
 
 class NamedTemporary:
     def __enter__(self) -> str:
-        self.fd, self.fp = tempfile.mkstemp(text=True)
+        self.fd, self.fp = tempfile.mkstemp(text=True, prefix='heb-ner-tmp-')
         return self.fp
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.close(self.fd)
+        os.remove(self.fp)
 
 
 @app.get('/')
