@@ -2,7 +2,7 @@ from enum import Enum
 import os
 import tempfile
 import time
-from typing import Dict, List, Set, Tuple
+from typing import Dict, Generator, List, Set, Tuple
 import torch
 from model.seqlabel import SeqLabel
 from ncrf_main import evaluate
@@ -21,12 +21,10 @@ class ModelEnum(str, Enum):
     token_multi = 'token_multi'
     morph = 'morph'
     hybrid = 'hybrid'
-    morph_lstm_ftam = 'morph_lstm_ftam'
+    # morph_lstm_ftam = 'morph_lstm_ftam'
 
 
 models: Dict[str, Tuple[Data, SeqLabel]] = {}
-
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,9 +36,9 @@ async def lifespan(app: FastAPI):
         print(f"Creating model {model_name}...")
         data = Data()
         data.HP_gpu = torch.cuda.is_available()
-        data.read_config('api_configs/token_single.conf')
+        data.read_config(f'api_configs/{model_name}.conf')
         data.load(data.dset_dir)
-        data.read_config('api_configs/token_single.conf') # need to reload for model dir and stuff like that
+        data.read_config(f'api_configs/{model_name}.conf') # need to reload for model dir and stuff like that
         if not torch.cuda.is_available():
             data.HP_gpu = False
         model = SeqLabel(data)
@@ -128,19 +126,65 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-def standard_predict(data: Data, model: SeqLabel, text: List[List[str]]) -> NERResponse:
+def predict_text(data: Data, model: SeqLabel, text: List[List[str]]) -> List[List[str]]:
     with NamedTemporary() as tmpfile:
-        with open(tmpfile, 'w') as tmpf:
+        with open(tmpfile, 'w', encoding='utf-8') as tmpf:
             for sent in text:
                 tmpf.write('\n'.join(map(lambda x: x + '\tO',sent)))
                 tmpf.write('\n\n')
         
         data.raw_dir = tmpfile
         data.generate_instance('raw')
-        speed, pred_results, pred_scores= evaluate(data, model, 'raw', skip_eval=True) # type: ignore
+        speed, pred_results, pred_scores = evaluate(data, model, 'raw', skip_eval=True)  # type: ignore
         
-    print(pred_results)
+    return pred_results # type: ignore
+
+def predict_text_from_md_df(data: Data, model: SeqLabel, md: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Returns ner dataframe
+    '''
+    text = md.copy(deep=True)
+    
+    text.rename(
+        columns = {
+        'FORM': 'Token',
+        'SENTNUM': 'SentNum'
+    }, inplace=True)
+    
+    text['WordIndex'] = text.groupby('SentNum').cumcount()
+    
+    with NamedTemporary() as tmpfile:
+        with open(tmpfile, 'w', encoding='utf-8') as tmpf:
+            tmpf.write('\n\n'.join(text.groupby('SentNum')['Token'].agg(lambda x: '\n'.join(map(lambda x: x + ' O', x)))))
+        data.raw_dir = tmpfile
+        data.generate_instance('raw')
+        speed, pred_results, pred_scores = evaluate(data, model, 'raw', skip_eval=True)  # type: ignore
         
+        
+    def pred_result_gen(pred_result):
+        for sent_num, sent in enumerate(pred_result):
+            for word_index, label in enumerate(sent):
+                yield (sent_num, word_index, label)
+        
+    label_df = pd.DataFrame(
+        data = pred_result_gen(pred_results),
+        columns = ['SentNum', 'WordIndex', 'Label']
+    )
+    
+    return pd.merge(text, label_df, on=['SentNum', 'WordIndex'])[['SentNum', 'WordIndex', 'Token', 'Label']]
+
+
+def standard_predict(data: Data, model: SeqLabel, text: List[List[str]]) -> NERResponse:
+    pred_results = predict_text(data, model, text)
+    
+    # print(pred_results)
+    # print(type(pred_results))
+    # print(type(pred_results[0]))
+        
+    return wrap_pred_text_response(text, pred_results)
+
+
+def wrap_pred_text_response(text, pred_results):
     prediction_result = []
     for row1, row2 in zip(text, pred_results): 
         tokens_labels = [NERLabelledToken(token=t, label=l) for t, l in zip(row1, row2)]
@@ -151,50 +195,62 @@ def standard_predict(data: Data, model: SeqLabel, text: List[List[str]]) -> NERR
     )
     
     
-def pred_result_to_df(text: List[List[str]]):
-    pass
+def pred_result_to_df(text: List[List[str]], pred_result: List[List[str]]) -> pd.DataFrame:
+    def df_gen() -> Generator[Tuple[int, int, str, str], None, None]:
+        for sent_num, (text_sent, pred_sent) in enumerate(zip(text, pred_result)):
+            for word_ind, (t, p) in enumerate(zip(text_sent, pred_sent)):
+                yield (sent_num, word_ind, t, p)
+
+    return pd.DataFrame(
+        data = df_gen(),
+        columns = ner.NER_DF_COLUMNS
+    )
     
-async def hybrid_predict(text: List[List[str]]) -> NERResponse:
-    if ModelEnum.hybrid not in models or ModelEnum.morph not in models:
+def hybrid_predict(text: List[List[str]]) -> NERResponse:
+    if ModelEnum.token_multi not in models or ModelEnum.morph not in models:
         raise HTTPException(status_code=404, detail="The requisite models were not properly loaded by the API.")
     
+    tokenized_text_as_str = '\n\n'.join(map('\n'.join, text)) + '\n\n'
     
-    ma = yap.yap_ma_api(ner.raw_toks_str_from_ner_df(tok))
+    multi_data, multi_model = models[ModelEnum.token_multi]
+    
+    multi_pred_result = predict_text(multi_data, multi_model, text)
+    
+    multi = pred_result_to_df(text, multi_pred_result)
+    
+    ma = yap.yap_ma_api(tokenized_text_as_str)
     
     print("MA complete")
-    
-    x = prune_lattices(ma, multi)
-    
-    print("Pruning complete")
-    
-    
-    print("Gold morph + fallback")
-
-    ma = yap.yap_ma_api(ner.raw_toks_str_from_ner_df(tok))
-    
-    print(ma)
     
     pruned = prune_lattices(ma, multi, fallback=True)
     
     md = yap.yap_joint_from_lattice_api(pruned)
     
-    md['TOKEN'] = md['TOKEN'].astype(str)
+    morph_data, morph_model = models[ModelEnum.morph]
     
-    with open('utils_eval_files/yap_hybrid_gold_multi_fallback_dev_tokens.txt', 'w') as w:
-        w.write('\n\n'.join(md.groupby('SENTNUM')['TOKEN'].agg('\n'.join)))
+    morph_from_pruned = predict_text_from_md_df(morph_data, morph_model, md)
     
-    md['FORM'] = md['FORM'].apply(lambda x: x + ' O')
+    tok_origins = yap.md_to_origins_df(md)
+    
+    res = ner.merge_morph_from_token_origins(morph_from_pruned, tok_origins, validate_to_single=True)
+    
+    # fix text at the end
+    
+    res['Token'] = multi['Word']
+    
+    res['LabelToken'] = res.apply(lambda x: NERLabelledToken(token=x['Token'], label=x['Label']), axis=1) # type: ignore
 
-    with open('utils_eval_files/yap_hybrid_gold_multi_fallback_dev.txt', 'w') as w:
-        w.write('\n\n'.join(md.groupby('SENTNUM')['FORM'].agg('\n'.join)))
-    
+    return NERResponse(
+        prediction = res.groupby('SentNum')['LabelToken'].agg(list).to_list()
+    )
+
 
 
 @app.post('/predict')
-async def api_predict(q: NERQuery) -> NERResponse:
+def api_predict(q: NERQuery) -> NERResponse:
     tt = tokenize_sentences(text2listOfSentences(q.text))
     if q.model == ModelEnum.hybrid:
-        return await hybrid_predict(tt)
+        return hybrid_predict(tt)
     
     if q.model not in models:
         raise HTTPException(status_code=404, detail=f"The model '{q.model}' has not been loaded, please try one of {list(models.keys())}")
