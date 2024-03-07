@@ -136,7 +136,7 @@ def lr_rate(step, model_size, factor, warmup):
         model_size ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
     )
 
-def evaluate(data: Data, model, name, nbest=None):
+def evaluate(data: Data, model, name, nbest=None, skip_eval=False):
     if name == "train":
         instances = data.train_Ids
     elif name == "dev":
@@ -184,6 +184,10 @@ def evaluate(data: Data, model, name, nbest=None):
         gold_results += gold_label
     decode_time = time.time() - start_time
     speed = len(instances)/decode_time
+    if skip_eval:
+        if nbest and not data.sentence_classification:
+            return speed, nbest_pred_results, pred_scores
+        return speed, pred_results, pred_scores
     acc, p, r, f = get_ner_fmeasure(gold_results, pred_results, data.tagScheme)
     if nbest and not data.sentence_classification:
         return speed, acc, p, r, f, nbest_pred_results, pred_scores

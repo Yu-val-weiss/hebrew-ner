@@ -105,7 +105,8 @@ def yap_ma_api(text: str):
     '''
     Returns `ma` Dataframe
     
-    Columns are `['FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']`
+    Columns are `['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']`
+        SENTNUM: Index of the sentence
         FROM: Index of the outgoing vertex of the edge
         TO: Index of the incoming vertex of the edge
         FORM: word form or punctuation mark
@@ -165,6 +166,39 @@ def aggregate_morph(morph_disamb_df: pd.DataFrame):
             .reset_index()
             )
     
+
+def md_to_origins_df(md: pd.DataFrame):
+    '''
+    Input `md` lattice Dataframe
+    
+    Returns `(origins)` Dataframe
+    
+    Reads a file of sentences, with each word NER labelled into a pandas dataframe
+    
+    Note: Yap assigns 1-based indices, so will subtract 1 here 
+    
+    Columns: `['SentNum', 'WordIndex', 'Origin']` 
+    
+    Can use `r.groupby('SentNum').agg(list)` to get them aggregated into sentences
+    '''
+    origins = md.copy(deep=True)
+    
+    origins.rename(
+        columns={
+            'SENTNUM': 'SentNum',
+            'TOKEN': 'Origin'
+        },
+        inplace=True
+    )
+    
+    origins['WordIndex'] = origins.groupby('SentNum').cumcount()
+    
+    origins['Origin'] = origins['Origin'] - 1
+    
+    origins = origins[['SentNum', 'WordIndex', 'Origin']]
+    
+    return origins
+    
     
 def lattice_df_to_yap_str(lattice: pd.DataFrame):
     x = [df
@@ -175,14 +209,23 @@ def lattice_df_to_yap_str(lattice: pd.DataFrame):
     return '\n\n'.join(x).strip() + '\n\n' 
 
 
-
 if __name__ == '__main__':
     s = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  "
     s2 = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  גנו גידל דגן בגן .  "
     ganan = "גנן גידל דגן בגן .  "
     # ma, md =  yap_joint_api(s2)
     _, md = yap_joint_api(s2)
-    md = md.groupby('SENTNUM')['FORM'].agg('\n'.join)
-    with open('test.txt', 'w') as w:
-        w.write('\n\n'.join(md) + '\n\n')
+    
+    
+    print(md.groupby('SENTNUM')['LabelToken'].agg(list).to_list())
+    
+    # print(md.head())
+
+    # origins = md_to_origins_df(md)
+    
+    # print(origins.groupby('SentNum')['Origin'].agg(list).to_list())
+    
+    # md = md.groupby('SENTNUM')['FORM'].agg('\n'.join)
+    # with open('test.txt', 'w') as w:
+    #     w.write('\n\n'.join(md) + '\n\n')
     

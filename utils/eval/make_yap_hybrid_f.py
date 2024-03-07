@@ -1,6 +1,6 @@
 from utils import ner, yap
 from utils.eval.consts import TOK, MULTI
-from ner_main import prune_lattices
+from ner_app import prune_lattices
 
 if __name__ == '__main__':
     tok = ner.read_file_to_sentences_df(TOK)
