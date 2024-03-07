@@ -21,7 +21,7 @@ class ModelEnum(str, Enum):
     token_multi = 'token_multi'
     morph = 'morph'
     hybrid = 'hybrid'
-    token_single_lstm_ftam = 'token_single_lstm_ftam'
+    morph_lstm_ftam = 'morph_lstm_ftam'
 
 
 models: Dict[str, Tuple[Data, SeqLabel]] = {}
@@ -31,11 +31,11 @@ models: Dict[str, Tuple[Data, SeqLabel]] = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # load ML models
-    for model in ModelEnum:
-        path = os.path.join("api_configs", f"{model}.conf")
+    for model_name in ModelEnum:
+        path = os.path.join("api_configs", f"{model_name}.conf")
         if not os.path.exists(path):
             continue
-        print(f"Creating model {model}...")
+        print(f"Creating model {model_name}...")
         data = Data()
         data.HP_gpu = torch.cuda.is_available()
         data.read_config('api_configs/token_single.conf')
@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
         else:
             model.load_state_dict(torch.load(data.load_model_dir, map_location=torch.device('cpu'))) # type: ignore
 
-        models['token_single'] = (data, model)
+        models[model_name] = (data, model)
     
     yield
     models.clear()
@@ -127,30 +127,19 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
     return response
 
-@app.post('/predict')
-def api_predict(q: NERQuery) -> NERResponse:
-    if q.model not in models:
-        raise HTTPException(status_code=404, detail=f"The model '{q.model}' has not been loaded, please try one of {list(models.keys())}")
-    data, model = models[q.model]
-    
-    tt = tokenize_sentences(text2listOfSentences(q.text))
+
+def standard_predict(data: Data, model: SeqLabel, text: List[List[str]]) -> NERResponse:
     with NamedTemporary() as tmpfile:
         with open(tmpfile, 'w') as tmpf:
-            for sent in tt:
+            for sent in text:
                 tmpf.write('\n'.join(map(lambda x: x + '\tO',sent)))
                 tmpf.write('\n\n')
-        
-        f = open(tmpfile, 'r')
-
-        file_contents = f.read()
-
-        print (file_contents)
-        
-        f.close()
         
         data.raw_dir = tmpfile
         data.generate_instance('raw')
         speed, pred_results, pred_scores= evaluate(data, model, 'raw', skip_eval=True) # type: ignore
+        
+    print(pred_results)
         
     prediction_result = []
     for row1, row2 in zip(tt, pred_results): #type: ignore
@@ -160,6 +149,60 @@ def api_predict(q: NERQuery) -> NERResponse:
     return NERResponse(
         prediction=prediction_result
     )
+    
+    
+def pred_result_to_df(text: List[List[str]]):
+    pass
+    
+async def hybrid_predict(text: List[List[str]]) -> NERResponse:
+    if ModelEnum.hybrid not in models or ModelEnum.morph not in models:
+        raise HTTPException(status_code=404, detail="The requisite models were not properly loaded by the API.")
+    
+    
+    ma = yap.yap_ma_api(ner.raw_toks_str_from_ner_df(tok))
+    
+    print("MA complete")
+    
+    x = prune_lattices(ma, multi)
+    
+    print("Pruning complete")
+    
+    
+    print("Gold morph + fallback")
+
+    ma = yap.yap_ma_api(ner.raw_toks_str_from_ner_df(tok))
+    
+    print(ma)
+    
+    pruned = prune_lattices(ma, multi, fallback=True)
+    
+    md = yap.yap_joint_from_lattice_api(pruned)
+    
+    md['TOKEN'] = md['TOKEN'].astype(str)
+    
+    with open('utils_eval_files/yap_hybrid_gold_multi_fallback_dev_tokens.txt', 'w') as w:
+        w.write('\n\n'.join(md.groupby('SENTNUM')['TOKEN'].agg('\n'.join)))
+    
+    md['FORM'] = md['FORM'].apply(lambda x: x + ' O')
+
+    with open('utils_eval_files/yap_hybrid_gold_multi_fallback_dev.txt', 'w') as w:
+        w.write('\n\n'.join(md.groupby('SENTNUM')['FORM'].agg('\n'.join)))
+    
+
+
+@app.post('/predict')
+async def api_predict(q: NERQuery) -> NERResponse:
+    tt = tokenize_sentences(text2listOfSentences(q.text))
+    if q.model == ModelEnum.hybrid:
+        return await hybrid_predict(tt)
+    
+    if q.model not in models:
+        raise HTTPException(status_code=404, detail=f"The model '{q.model}' has not been loaded, please try one of {list(models.keys())}")
+    data, model = models[q.model]
+    
+    return standard_predict(data, model, tt)
+    
+
 
 @app.get('/healthcheck')
 def health():
