@@ -400,20 +400,20 @@ def make_spans(labels: Iterable[str]) -> List[str]:
         labels (list[str]): list of labels
 
     Returns:
-        list str: format is category@low,high for B&E, else category@ind for S
+        list str: format is category@[low,high] for B&E, else category@[ind] for S
     """
     spans: List[str] = []
     for i, label in enumerate(labels):
-        if label == 'O' or 'I' in label:
+        if label == 'O':
             continue
         pos, cat = label.split('-')
+        if pos == 'I':
+            continue
         if pos == 'S' or pos == 'B':
-            spans.append(f'{cat}@{i}')
+            spans.append(f'{cat}@[{i}{"]" if pos == "S" else ""}')
         elif pos == 'E':
-            if len(spans) == 0 or ',' in spans[-1]:
-                spans.append(f'{cat}@,{i}')
-            else:
-                spans[-1] += f',{i}'
+            if len(spans) > 0 and ']' not in spans[-1]:
+                spans[-1] += f',{i}]'
     return spans
 
 
