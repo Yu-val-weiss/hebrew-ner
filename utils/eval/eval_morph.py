@@ -1,9 +1,10 @@
 import pandas as pd
 from utils.eval.consts import MORPH, MULTI, TOK
 from utils import ner
+from app_env import ENV
 
 if __name__ == '__main__':
-    PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50.txt'
+    PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50.txt'
     morph, pred_morph = ner.read_file_to_sentences_df(MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
     tok, multi = ner.read_file_to_sentences_df(TOK), ner.read_file_to_sentences_df(MULTI)
     print('GOLD MORPH')
@@ -16,8 +17,8 @@ if __name__ == '__main__':
     
     print('PURE YAP')
     
-    ORIGINS = '/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_morph_dev_tokens.txt'
-    YAP_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50_yap.txt'
+    ORIGINS = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/utils_eval_files/yap_morph_dev_tokens.txt'
+    YAP_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50_yap.txt'
     
     yap_morph = ner.read_file_to_sentences_df(YAP_MORPH)
     origins = ner.read_token_origins_to_df(ORIGINS)
@@ -28,8 +29,8 @@ if __name__ == '__main__':
     
     print('\nHYBRID + PRED MULTI')
     
-    yap_morph = ner.read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50_yap_hybrid_pred_multi.txt')
-    origins = ner.read_token_origins_to_df('/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_hybrid_pred_multi_dev_tokens.txt')
+    yap_morph = ner.read_file_to_sentences_df(f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50_yap_hybrid_pred_multi.txt')
+    origins = ner.read_token_origins_to_df(f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/utils_eval_files/yap_hybrid_pred_multi_dev_tokens.txt')
     
     merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True).groupby('SentNum')['Label'].agg(list).to_list()
 
@@ -37,8 +38,8 @@ if __name__ == '__main__':
     
     print('\nHYBRID + GOLD MULTI')
     
-    yap_morph = ner.read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50_yap_hybrid_gold_multi.txt')
-    origins = ner.read_token_origins_to_df('/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_hybrid_gold_multi_dev_tokens.txt')
+    yap_morph = ner.read_file_to_sentences_df(f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50_yap_hybrid_gold_multi.txt')
+    origins = ner.read_token_origins_to_df(f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/utils_eval_files/yap_hybrid_gold_multi_dev_tokens.txt')
     
     merged = ner.merge_morph_from_token_origins(yap_morph, origins, validate_to_single=True)
     

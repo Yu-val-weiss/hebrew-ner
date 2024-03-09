@@ -1,13 +1,14 @@
 from utils import ner, yap
 from utils.eval.consts import TOK, MULTI
 from ner_app import prune_lattices
+from app_env import ENV
 
 if __name__ == '__main__':
     tok = ner.read_file_to_sentences_df(TOK)
     
     multi = ner.read_file_to_sentences_df(MULTI)
     
-    pred_multi = ner.read_file_to_sentences_df('/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/tok_multi_cnn.txt')
+    pred_multi = ner.read_file_to_sentences_df(f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/tok_multi_cnn.txt')
         
     tok_str = ner.raw_toks_str_from_ner_df(tok)
     
