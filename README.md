@@ -1,5 +1,16 @@
 # Hebrew NER: Part II Project
 
+## .env file
+
+Users should create a `.env` file with the following parameters that should be filled
+
+```config
+ABSOLUTE_PATH_HEBREW_NER=
+CORPUS_DIR=
+YAP_HOST=
+YAP_PORT=
+```
+
 ## Forked YAP Parser
 
 ### New Command

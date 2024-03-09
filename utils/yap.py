@@ -6,7 +6,7 @@ import pandas as pd
 from types import SimpleNamespace
 from app_env import ENV
 
-YAP_PATH = f"{ENV.YAP_HOST}:{ENV.YAP_PORT}/yap/heb"
+YAP_PATH = f"http://{ENV.YAP_HOST}:{ENV.YAP_PORT}/yap/heb"
 
 LATTICE_COLUMNS = ['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']
 '''
@@ -219,9 +219,8 @@ if __name__ == '__main__':
     _, md = yap_joint_api(s2)
     
     
-    print(md.groupby('SENTNUM')['LabelToken'].agg(list).to_list())
     
-    # print(md.head())
+    print(md.head())
 
     # origins = md_to_origins_df(md)
     
