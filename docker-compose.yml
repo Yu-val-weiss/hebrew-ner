@@ -1,6 +1,8 @@
 services:
   yap:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.yap
     ports:
       - "8000:8000"
     healthcheck:
@@ -8,3 +10,28 @@ services:
       interval: 1m
       timeout: 3s
       retries: 3
+
+  api: 
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - type: bind
+        source: ./fasttext
+        target: /app/fasttext
+      - type: bind
+        source: ./ncrf_hpc_configs
+        target: /app/ncrf_hpc_configs
+    environment:
+      - YAP_HOST=yap
+      - YAP_PORT=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/healthcheck"]
+      interval: 1m
+      timeout: 3s
+      retries: 3
+      start_period: 5m
+
+    
