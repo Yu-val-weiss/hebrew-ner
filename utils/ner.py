@@ -9,6 +9,8 @@ from utils import yap
 import pandas as pd
 from utils.eval.consts import MORPH, MULTI, TOK
 
+from app_env import ENV
+
 NER_DF_COLUMNS = ['SentNum', 'WordIndex', 'Word', 'Label'] 
 
 class WordLabel(NamedTuple):
@@ -548,9 +550,9 @@ def raw_toks_str_from_ner_df(df: pd.DataFrame) -> str:
             .agg('\n'.join)) + '\n\n'
     
 if __name__ == '__main__':
-    PRED_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50.txt'
+    PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50.txt'
     
-    YAP_MORPH = '/Users/yuval/GitHub/hebrew-ner/hpc_eval_results/morph_cnn_seed_50_yap.txt'
+    YAP_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50_yap.txt'
     
     morph = read_file_to_sentences_df(MORPH)
     pred_morph = read_file_to_sentences_df(PRED_MORPH)
@@ -561,7 +563,7 @@ if __name__ == '__main__':
     
     # print(merge_morph_from_multi_spliting(yap_morph, multi))
     
-    ORIGINS = '/Users/yuval/GitHub/hebrew-ner/utils_eval_files/yap_morph_dev_tokens.txt'
+    ORIGINS = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/utils_eval_files/yap_morph_dev_tokens.txt'
     
     origins = read_token_origins_to_df(ORIGINS)
     
