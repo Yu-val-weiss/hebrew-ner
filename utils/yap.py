@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Author: Yuval Weiss
+# @Author: me
 from typing import List, Set
 import requests
 import pandas as pd
