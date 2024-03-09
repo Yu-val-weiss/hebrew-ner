@@ -20,6 +20,7 @@ COPY model/ model/
 # to avoid copying over the large models, will mount in docker compose
 RUN mkdir /app/ncrf_hpc_configs
 COPY utils/ utils/
+COPY app_env.py app_env.py
 COPY ncrf_main.py ncrf_main.py
 COPY ner_app.py ner_app.py
 
