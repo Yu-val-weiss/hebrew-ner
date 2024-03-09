@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author: Jie
 # @Date:   2017-06-14 17:34:32
-# @Last Modified by: Yuval Weiss
-# @Last Modified time: 2023-10-22 19:10:11
+# @Last Modified by: me
 import os
 import sys
 from .alphabet import Alphabet

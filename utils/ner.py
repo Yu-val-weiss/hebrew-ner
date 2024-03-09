@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Author: Yuval Weiss
+# @Author: me
 import re
 import string
 import time
