@@ -4,8 +4,10 @@ from typing import List, Set
 import requests
 import pandas as pd
 from types import SimpleNamespace
+from app_env import ENV
 
-YAP_PATH = "http://localhost:8000/yap/heb"
+YAP_PATH = f"{ENV.YAP_HOST}:{ENV.YAP_PORT}/yap/heb"
+
 LATTICE_COLUMNS = ['SENTNUM', 'FROM', 'TO', 'FORM', 'LEMMA', 'C_POS_TAG', 'POS_TAG', 'FEATS', 'TOKEN']
 '''
 SENTNUM: Index of the sentence
