@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Author: Yuval Weiss
-# @Date:   2023-12-27 17:45:14
-# @Last Modified by: Yuval Weiss
-# @Last Modified time: 2023-12-27 17:45:14
+# @Author: me
 from math import log, sqrt
 from typing import Type, Union
 from torch import Tensor, nn
