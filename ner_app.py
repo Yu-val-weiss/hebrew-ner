@@ -1,3 +1,4 @@
+import argparse
 from enum import Enum
 import os
 import tempfile
@@ -15,6 +16,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from utils.tokenizer import text2listOfSentences, tokenize_sentences
+
 
 class ModelEnum(str, Enum):
     token_single = 'token_single'
@@ -260,4 +262,14 @@ def health():
     return "OK"
 
 if __name__ == '__main__':
-    uvicorn.run('ner_app:app', port=5000, reload=True, reload_excludes=["ner_app_tests.py"])
+    parser = argparse.ArgumentParser(description='Run the UVicorn server for the NER app.')
+    parser.add_argument('--port', type=int, default=5000, help='Port number for the server')
+    parser.add_argument('--host', type=str, default='127.0.0.1', help='Host to run on')
+    parser.add_argument('--reload', dest='reload', action='store_true', help='Enable hot reload')
+    parser.add_argument('--reload-excludes', nargs='*', default=["ner_app_tests.py"], help='Files to exclude from auto-reload')
+
+    args = parser.parse_args()
+
+    uvicorn.run('ner_app:app', port=args.port, host=args.host,
+                reload=args.reload, 
+                reload_excludes=None if not args.reload else args.reload_excludes)
