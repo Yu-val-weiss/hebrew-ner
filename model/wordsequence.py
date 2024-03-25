@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author: Jie Yang
 # @Date:   2017-10-17 16:47:32
-# @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
-# @Last Modified time: 2019-02-01 15:59:26
+# @Last Modified by:   me
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
