@@ -7,9 +7,11 @@ from typing import Dict, Generator, List, Set, Tuple
 import torch
 from model.seqlabel import SeqLabel
 from ncrf_main import evaluate
+import fasttext
 from utils import ner, yap
 from utils.data import Data
 from utils.yap_graph import YapGraph
+from utils.functions import load_fasttext_model
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
 import uvicorn
@@ -27,9 +29,12 @@ class ModelEnum(str, Enum):
 
 
 models: Dict[str, Tuple[Data, SeqLabel]] = {}
+embedder: Dict[str, fasttext.FastText._FastText] = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # load default fastText model to share amongst
+    embedder['fasttext'] = load_fasttext_model('fasttext/wiki.he.bin')
     # load ML models
     for model_name in ModelEnum:
         path = os.path.join("api_configs", f"{model_name}.conf")
@@ -39,7 +44,7 @@ async def lifespan(app: FastAPI):
         data = Data()
         data.HP_gpu = torch.cuda.is_available()
         data.read_config(f'api_configs/{model_name}.conf')
-        data.load(data.dset_dir, fasttext_model_dir='fasttext/wiki.he.bin')
+        data.load(data.dset_dir, fasttext_model_dir='fasttext/wiki.he.bin', prebuilt_ft_model=embedder['fasttext'])
         data.read_config(f'api_configs/{model_name}.conf') # need to reload for model dir and stuff like that
         if not torch.cuda.is_available():
             data.HP_gpu = False
@@ -53,6 +58,7 @@ async def lifespan(app: FastAPI):
     
     yield
     models.clear()
+    embedder.clear()
     
 
 app = FastAPI(debug=True, lifespan=lifespan)
