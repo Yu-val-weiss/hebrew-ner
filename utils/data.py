@@ -366,18 +366,25 @@ class Data:
         print("Predict %s result has been written into file. %s"%(name, self.decode_dir))
 
 
-    def load(self,data_file, fasttext_model_dir=None):
+    def load(self,data_file, fasttext_model_dir=None, prebuilt_ft_model: Union[None, fasttext.FastText._FastText]=None):
         f = open(data_file, 'rb')
         tmp_dict = pickle.load(f)
         f.close()
         self.__dict__.update(tmp_dict)
         if self.use_fasttext_as_model:
-            if self.word_emb_dir is None and fasttext_model_dir is None:
-                raise Exception('Cannot load model that uses fastText due to unspecified embedding directory')
+            if prebuilt_ft_model is not None:
+                if self.word_emb_dim == prebuilt_ft_model.get_dimension():
+                    print('Successfully using prebuilt fastText model!')
+                    self.fasttext_model = prebuilt_ft_model
+                    return
+                else:
+                    print('Prebuilt fastText model does not match specified dimension, rebuilding...')
             if fasttext_model_dir is not None:
                 self.build_fasttext_model(fasttext_model_dir, self.word_emb_dim)
-            else:
+            elif self.word_emb_dir is not None:
                 self.build_fasttext_model(self.word_emb_dir, self.word_emb_dim)
+            else:
+                raise Exception('Cannot load model that uses fastText due to unspecified embedding directory')
 
     def save(self,save_file):
         f = open(save_file, 'wb')
