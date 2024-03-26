@@ -139,5 +139,5 @@ tar -xvf archive.tar.gz
 ### Updating seed
 
 ```bash
-perl -pi -e 's/seed_num = [0-9]*/seed_num = 46/' /home/yw580/hebrew-ner/ncrf_main.py
+perl -pi -e 's/seed_num = [0-9]*/seed_num = 46/' /home/CRSID/hebrew-ner/ncrf_main.py
 ```
