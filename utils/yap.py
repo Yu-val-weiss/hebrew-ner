@@ -205,7 +205,7 @@ def md_to_origins_df(md: pd.DataFrame):
 def lattice_df_to_yap_str(lattice: pd.DataFrame):
     x = [df
          .drop('SENTNUM', axis='columns')
-         .to_csv(header=False, index=False, sep='\t', quotechar="'")
+         .to_csv(header=False, index=False, sep='\t', quotechar="`")
          for _, df
          in lattice.groupby('SENTNUM')]
     return '\n\n'.join(x).strip() + '\n\n' 
