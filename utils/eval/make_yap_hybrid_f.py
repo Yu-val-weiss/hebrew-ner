@@ -1,6 +1,6 @@
 from utils import ner, yap
 from utils.eval.consts import TOK, MULTI
-from ner_app import prune_lattices
+from utils.yap_graph import prune_lattices
 from app_env import ENV
 
 if __name__ == '__main__':
