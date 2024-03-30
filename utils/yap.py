@@ -216,11 +216,30 @@ if __name__ == '__main__':
     s2 = "עשרות אנשים מגעים מתאילנד לישראל כשהם נרשמים כמתנדבים , אך למעשה משמשים עובדים שכירים זולים .  גנו גידל דגן בגן .  "
     ganan = "גנן גידל דגן בגן .  "
     # ma, md =  yap_joint_api(s2)
-    _, md = yap_joint_api(s2)
     
+    ma, md = yap_joint_api(ganan)
     
+    # _, md = yap_joint_api(s2)
     
-    print(md.head())
+    # f = lambda x: x if x != '_' else '\\_'
+    g = lambda x: f'\\texthebrew{{{x}}}'
+    
+    ma['FORM'] = ma['FORM'].apply(g)
+    # ma['LEMMA'] = ma['LEMMA'].apply(g)
+    
+    md['FORM'] = md['FORM'].apply(g)
+    # md['LEMMA'] = md['LEMMA'].apply(g)
+    
+    # ma.drop('C_POS_TAG', axis='columns', inplace=True)
+    # ma['POS_TAG'] = ma['POS_TAG'].apply(lambda x: x if 'prepo' not in x.lower() else 'PREP')
+    # md.drop('C_POS_TAG', axis='columns', inplace=True)
+    # md['POS_TAG'] = md['POS_TAG'].apply(lambda x: x if 'prepo' not in x.lower() else 'PREP')
+    
+    print(ma.to_latex(index=False, columns=['SENTNUM', 'FROM', 'TO', 'FORM', 'TOKEN']).replace('_', '\\_'))
+    
+    print(md.to_latex(index=False, columns=['SENTNUM', 'FROM', 'TO', 'FORM', 'TOKEN']).replace('_', '\\_'))
+    
+    # print(md.head())
 
     # origins = md_to_origins_df(md)
     
