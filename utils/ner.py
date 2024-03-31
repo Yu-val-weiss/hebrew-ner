@@ -555,6 +555,22 @@ if __name__ == '__main__':
     YAP_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50_yap.txt'
     
     morph = read_file_to_sentences_df(MORPH)
+    
+    texthebrew = lambda x: f'\\texthebrew{{{x}}}'
+    
+    tex = morph[morph['SentNum'] == 0].to_latex(
+        index=False,
+        escape=True,
+        formatters={
+            'Word': texthebrew
+        }
+    )
+    
+    print(tex)
+    
+    raise
+    
+    
     pred_morph = read_file_to_sentences_df(PRED_MORPH)
     multi = read_file_to_sentences_df(MULTI)
     tok = read_file_to_sentences_df(TOK)
