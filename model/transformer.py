@@ -82,7 +82,7 @@ class AddAndNorm(nn.Module):
         Applies dropout to the output of each sub-layer, before it is added to the sub-layer input and normalised.
         The annotated solution applies normalisation first for 'code simplicity', so I do so as well. 
         '''
-        return X + sublayer(self.layer_norm(X))
+        return X + self.dropout(sublayer(self.layer_norm(X)))
     
     
 class PositionWiseFeedForward(nn.Module):
