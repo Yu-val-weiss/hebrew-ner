@@ -18,6 +18,9 @@ class TransformerLabeller(nn.Module):
             num_layers (int): number of encoder layers
             dropout (float): amount of dropout to be applied
             num_heads (int): number of attention heads to use, note requirement of input size % heads == 0
+            hidden_dim (int): d_ff, if set to -1 then hidden_dim = 4 * input_size
+            pos_enc (bool): decides whether to use positional encoding
+            trim_pos_enc_from (int): if set to > 0, sets the positional encoding to zero from that point onwards
         """
         super().__init__()
         self.input_size = input_size
