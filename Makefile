@@ -7,7 +7,7 @@ upload-code:
 	rsync -av --progress --exclude-from='ignore.txt' . ${CRSID}@login.hpc.cam.ac.uk:/home/${CRSID}/hebrew-ner --human-readable
 
 data-archive:
-	tar --no-xattrs -X .tarignore -czvf data_archive.tar.gz --totals -C /Users/yuval/GitHub/NEMO-Corpus data/
+	tar --no-xattrs -X .tarignore -czvf data_archive.tar.gz --totals -C /Users/${MY_NAME}/GitHub/NEMO-Corpus data/
 
 upload-data:
 	scp data_archive.tar.gz ${CRSID}@login.hpc.cam.ac.uk:/rds/user/${CRSID}/hpc-work/ner-corpus
