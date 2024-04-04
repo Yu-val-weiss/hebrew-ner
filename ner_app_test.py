@@ -64,15 +64,21 @@ def test_base_predict(testclientfixture):
     ("איש בטקסס לא פיקפק שיריבה הרפובליקאי, קלייטון ויליאמס, חוואי ואיש נפט, יביס אותה בקלות .",
      ['O', 'S-GPE', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'E-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']),
 ])
-def test_standard_predict(testclientfixture, input, expected_output):
+def test_standard_and_hybrid_predict(testclientfixture, input, expected_output):
     # with TestClient(app) as client:
     resp = testclientfixture.post(
         "/predict",
         json={"text": input, "model": ModelEnum.token_single}
     )
+    resp2 = testclientfixture.post(
+        "/predict",
+        json={"text": input, "model": ModelEnum.hybrid}
+    )
     assert resp.status_code == 200
     labels = [x["label"] for x in resp.json()["prediction"][0]]
+    labels2 = [x["label"] for x in resp2.json()["prediction"][0]]
     assert labels == expected_output
+    assert labels2 == expected_output
 
 def test_temp_file():
     with NamedTemporary() as tmpf:
