@@ -124,7 +124,7 @@ def basic_trn_on_dev(show=True):
 
     base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
-                    title='Comparison between NEMO$^2$ results and my novel architecture results - dev\n' +r'\small{token-level evaluation}',
+                    title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{token-level evaluation}',
                     # save=None,
                     save='graphs/transformer/token_eval_dev.png',
                     show=show,
@@ -143,7 +143,7 @@ def basic_trn_on_test(show=True):
 
     base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
-                    title='Comparison between NEMO$^2$ results and my novel architecture results - test\n' +r'\small{token-level evaluation}',
+                    title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{token-level evaluation}',
                     # save=None,
                     save='graphs/transformer/token_eval_test.png',
                     show=show,
@@ -160,7 +160,7 @@ def morph_trn_on_dev(show=True):
 
     base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
                     x_label='NER Type', y_label='F1 Scores (morpheme-level evaluation)',
-                    title='Comparison between reported results and my recreated results - dev\n' +r'\small{morpheme-level evaluation}',
+                    title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{morpheme-level evaluation}',
                     # save=None,
                     save='graphs/standard/morph_eval_dev.png',
                     show=show,
@@ -171,5 +171,6 @@ if __name__ == '__main__':
     # basic_on_test(False)
     # morph_on_dev(False)
     # morph_on_test()
-    # basic_trn_on_dev()
-    basic_trn_on_test()
+    basic_trn_on_dev(False)
+    basic_trn_on_test(False)
+    morph_trn_on_dev(False)
