@@ -10,11 +10,10 @@ style.use('seaborn-v0_8-colorblind')
 
 
 def base_comp_graph(categories, orig_values, orig_label, compared_values, compared_label, x_label='', y_label='', title='', bar_width=0.2, dpi=800, show=True, save=None):
-    # where to place the bars
     orig_positions = np.arange(len(categories))
     compared_positions = orig_positions + bar_width
     
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     
     orig_bars = ax.bar(orig_positions, orig_values, bar_width, label=orig_label)
     compared_bars = ax.bar(compared_positions, compared_values, bar_width, label=compared_label)
