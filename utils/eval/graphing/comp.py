@@ -10,6 +10,8 @@ style.use('seaborn-v0_8-colorblind')
 
 
 def base_comp_graph(categories, orig_values, orig_label, compared_values, compared_label, x_label='', y_label='', title='', bar_width=0.2, dpi=800, show=True, save=None):
+    bar_width = bar_width * len(categories)
+    
     orig_positions = np.arange(len(categories))
     compared_positions = orig_positions + bar_width
     
@@ -40,7 +42,7 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
         plt.show()
         
 
-if __name__ == '__main__':
+def basic_on_dev(show=True):
     gold_morph = eval_morph_ftam.eval_morph_ftam_dev()
     tok = eval_single.eval_single_dev()
     multi = eval_multi.eval_multi_dev()
@@ -52,7 +54,65 @@ if __name__ == '__main__':
 
     base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Recreated',
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
-                    title='Comparison between reported results and my recreated results\n' +r"\small{token-level evaluation}",
+                    title='Comparison between reported results and my recreated results - dev\n' +r'\small{token-level evaluation}',
                     # save=None,
-                    save='graphs/standard/token_eval.png',
-                    bar_width=0.25)
+                    save='graphs/standard/token_eval_dev.png',
+                    show=show,
+                    bar_width=0.08)
+    
+def basic_on_test(show=True):
+    gold_morph = eval_morph_ftam.eval_morph_ftam_test()
+    tok = eval_single.eval_single_test()
+    multi = eval_multi.eval_multi_test()
+
+    categories = ['Token-Single', 'Token-Multi', 'Morpheme']
+    orig_values = np.array([77.15,77.75,79.28])
+    my_values = np.array([tok.f, multi.f,  gold_morph.f])
+    my_values = my_values * 100
+
+    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Recreated',
+                    x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
+                    title='Comparison between reported results and my recreated results - test\n' +r'\small{token-level evaluation}',
+                    # save=None,
+                    save='graphs/standard/token_eval_test.png',
+                    show=show,
+                    bar_width=0.08)
+    
+
+def morph_on_dev(show=True):
+    _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_dev()
+
+    categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    orig_values = np.array([80.30,74.52,79.04,79.04])
+    my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
+    my_values = my_values * 100
+
+    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Recreated',
+                    x_label='NER Type', y_label='F1 Scores (morpheme-level evaluation)',
+                    title='Comparison between reported results and my recreated results - dev\n' +r'\small{morpheme-level evaluation}',
+                    # save=None,
+                    save='graphs/standard/morph_eval_dev.png',
+                    show=show,
+                    bar_width=0.08)
+    
+def morph_on_test(show=True):
+    _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_test()
+
+    categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    orig_values = np.array([79.10,69.52,77.11,77.11])
+    my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
+    my_values = my_values * 100
+
+    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Recreated',
+                    x_label='NER Type', y_label='F1 Scores (morpheme-level evaluation)',
+                    title='Comparison between reported results and my recreated results - test\n' +r'\small{morpheme-level evaluation}',
+                    # save=None,
+                    save='graphs/standard/morph_eval_test.png',
+                    show=show,
+                    bar_width=0.08)
+
+if __name__ == '__main__':
+    # basic_on_dev(False)
+    # basic_on_test(False)
+    # morph_on_dev(False)
+    morph_on_test()
