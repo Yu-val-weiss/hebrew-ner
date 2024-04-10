@@ -7,7 +7,7 @@ from typing import Callable, Iterable, List, NamedTuple, Tuple
 
 from utils import yap
 import pandas as pd
-from utils.eval.consts import MORPH, MULTI, TOK
+from utils.eval.consts import DEV
 
 from app_env import ENV
 
@@ -554,7 +554,7 @@ if __name__ == '__main__':
     
     YAP_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50_yap.txt'
     
-    morph = read_file_to_sentences_df(MORPH)
+    morph = read_file_to_sentences_df(DEV.MORPH)
     
     texthebrew = lambda x: f'\\texthebrew{{{x}}}'
     

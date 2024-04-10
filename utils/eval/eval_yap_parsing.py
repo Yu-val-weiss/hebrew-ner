@@ -1,9 +1,9 @@
 from utils import yap, ner
-from utils.eval.consts import MORPH
+from utils.eval.consts import DEV
 from app_env import ENV
 
 if __name__ == '__main__':
-    gold = ner.read_file_to_sentences_df(MORPH).groupby('SentNum')['Word'].agg(list)
+    gold = ner.read_file_to_sentences_df(DEV.MORPH).groupby('SentNum')['Word'].agg(list)
     
     
     hybrid_gold_multi = ner.read_file_to_sentences_df(f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/utils_eval_files/yap_hybrid_gold_multi_dev.txt').groupby('SentNum')['Word'].agg(list)

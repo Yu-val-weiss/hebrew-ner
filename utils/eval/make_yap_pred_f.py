@@ -1,8 +1,8 @@
 from utils import ner, yap
-from utils.eval.consts import TOK
+from utils.eval.consts import DEV
 
 if __name__ == '__main__':
-    tok = ner.read_file_to_sentences_df(TOK)
+    tok = ner.read_file_to_sentences_df(DEV.TOK)
         
     tok_str = ner.raw_toks_str_from_ner_df(tok)
 
