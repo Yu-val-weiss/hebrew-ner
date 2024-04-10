@@ -150,6 +150,22 @@ def basic_trn_on_test(show=True):
                     bar_width=0.08)
 
 
+def morph_trn_on_dev(show=True):
+    _, gold_morph, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_dev()
+
+    categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    orig_values = np.array([80.30,74.52,79.04,79.04])
+    my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
+    my_values = my_values * 100
+
+    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
+                    x_label='NER Type', y_label='F1 Scores (morpheme-level evaluation)',
+                    title='Comparison between reported results and my recreated results - dev\n' +r'\small{morpheme-level evaluation}',
+                    # save=None,
+                    save='graphs/standard/morph_eval_dev.png',
+                    show=show,
+                    bar_width=0.08)
+
 if __name__ == '__main__':
     # basic_on_dev(False)
     # basic_on_test(False)
