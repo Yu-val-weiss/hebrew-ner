@@ -1,5 +1,5 @@
 import pandas as pd
-from utils.eval.consts import DEV
+from utils.eval.consts import DEV, TEST
 from utils import ner
 
 from app_env import ENV
@@ -8,6 +8,13 @@ def eval_morph_ftam_dev():
     PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/ncrf_results/morph/from_hpc_seed46_ftam/results.txt'
     morph, pred_morph = ner.read_file_to_sentences_df(DEV.MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
     tok, multi = ner.read_file_to_sentences_df(DEV.TOK), ner.read_file_to_sentences_df(DEV.MULTI)
+    print('GOLD MORPH')
+    return ner.evaluate_morpheme(pred_morph, morph, multi, tok)[1]
+
+def eval_morph_ftam_test():
+    PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/ncrf_results/morph/final/test-results_ftam.txt'
+    morph, pred_morph = ner.read_file_to_sentences_df(TEST.MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
+    tok, multi = ner.read_file_to_sentences_df(TEST.TOK), ner.read_file_to_sentences_df(TEST.MULTI)
     print('GOLD MORPH')
     return ner.evaluate_morpheme(pred_morph, morph, multi, tok)[1]
 
