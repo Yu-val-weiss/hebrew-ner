@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 import matplotlib.style as style
 import numpy as np
-from utils.eval import eval_morph_ftam, eval_multi, eval_single, eval_morph
+from utils.eval import eval_morph_ftam, eval_multi, eval_single, eval_morph, eval_trn_morph, eval_trn_multi, eval_trn_single
 from matplotlib import rc
 
 # activate latex text rendering
@@ -110,9 +110,50 @@ def morph_on_test(show=True):
                     save='graphs/standard/morph_eval_test.png',
                     show=show,
                     bar_width=0.08)
+  
+    
+def basic_trn_on_dev(show=True):
+    gold_morph = eval_trn_morph.eval_trn_morph_dev()
+    tok = eval_trn_single.eval_single_dev()
+    multi = eval_trn_multi.eval_multi_dev()
+
+    categories = ['Token-Single', 'Token-Multi', 'Morpheme']
+    orig_values = np.array([78.15,77.59,80.30])
+    my_values = np.array([tok.f, multi.f,  gold_morph.f])
+    my_values = my_values * 100
+
+    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
+                    x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
+                    title='Comparison between NEMO$^2$ results and my novel architecture results - dev\n' +r'\small{token-level evaluation}',
+                    # save=None,
+                    save='graphs/transformer/token_eval_dev.png',
+                    show=show,
+                    bar_width=0.08)
+    
+    
+def basic_trn_on_test(show=True):
+    gold_morph = eval_trn_morph.eval_trn_morph_test()
+    tok = eval_trn_single.eval_single_test()
+    multi = eval_trn_multi.eval_multi_test()
+
+    categories = ['Token-Single', 'Token-Multi', 'Morpheme']
+    orig_values = np.array([77.15,77.75,79.28])
+    my_values = np.array([tok.f, multi.f,  gold_morph.f])
+    my_values = my_values * 100
+
+    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
+                    x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
+                    title='Comparison between NEMO$^2$ results and my novel architecture results - test\n' +r'\small{token-level evaluation}',
+                    # save=None,
+                    save='graphs/transformer/token_eval_test.png',
+                    show=show,
+                    bar_width=0.08)
+
 
 if __name__ == '__main__':
     # basic_on_dev(False)
     # basic_on_test(False)
     # morph_on_dev(False)
-    morph_on_test()
+    # morph_on_test()
+    # basic_trn_on_dev()
+    basic_trn_on_test()
