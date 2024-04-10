@@ -1,13 +1,13 @@
 import pandas as pd
-from utils.eval.consts import MORPH, MULTI, TOK
+from utils.eval.consts import DEV
 from utils import ner
 
 from app_env import ENV
 
-def eval_morph_ftam():
+def eval_morph_ftam_dev():
     PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/ncrf_results/morph/from_hpc_seed46_ftam/results.txt'
-    morph, pred_morph = ner.read_file_to_sentences_df(MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
-    tok, multi = ner.read_file_to_sentences_df(TOK), ner.read_file_to_sentences_df(MULTI)
+    morph, pred_morph = ner.read_file_to_sentences_df(DEV.MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
+    tok, multi = ner.read_file_to_sentences_df(DEV.TOK), ner.read_file_to_sentences_df(DEV.MULTI)
     print('GOLD MORPH')
     gold_morph = ner.evaluate_morpheme(pred_morph, morph, multi, tok)
     
@@ -52,4 +52,4 @@ def eval_morph_ftam():
     return (gold_morph[1], pure_yap, pred_multi, gold_multi)    # return only morph to single
 
 if __name__ == '__main__':
-    eval_morph_ftam()
+    eval_morph_ftam_dev()

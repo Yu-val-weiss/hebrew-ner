@@ -42,9 +42,9 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
         
 
 if __name__ == '__main__':
-    (gold_morph, pure_yap, pred_multi, gold_multi) = eval_morph_ftam.eval_morph_ftam()
-    tok = eval_single.eval_single_tok()
-    multi = eval_multi.eval_multi()
+    (gold_morph, pure_yap, pred_multi, gold_multi) = eval_morph_ftam.eval_morph_ftam_dev()
+    tok = eval_single.eval_single_dev()
+    multi = eval_multi.eval_multi_dev()
 
     categories = ['Token-Single', 'Token-Multi', 'Morpheme']
     orig_values = np.array([78.15,77.59,80.30])
