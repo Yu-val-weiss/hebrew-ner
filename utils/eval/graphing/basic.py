@@ -1,4 +1,3 @@
-import matplotlib
 from matplotlib import pyplot as plt
 import matplotlib.style as style
 import numpy as np
