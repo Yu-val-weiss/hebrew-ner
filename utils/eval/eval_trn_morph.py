@@ -34,7 +34,7 @@ def eval_all_trn_morph_dev():
     print('PURE YAP')
     
     ORIGINS = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/utils_eval_files/yap_morph_dev_tokens.txt'
-    YAP_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50_yap.txt'
+    YAP_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/ncrf_results/transformer/morph/yap_morph_results.txt'
     
     yap_morph = ner.read_file_to_sentences_df(YAP_MORPH)
     origins = ner.read_token_origins_to_df(ORIGINS)
