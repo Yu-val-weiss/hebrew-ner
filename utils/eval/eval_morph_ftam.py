@@ -9,6 +9,13 @@ def eval_morph_ftam_dev():
     morph, pred_morph = ner.read_file_to_sentences_df(DEV.MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
     tok, multi = ner.read_file_to_sentences_df(DEV.TOK), ner.read_file_to_sentences_df(DEV.MULTI)
     print('GOLD MORPH')
+    return ner.evaluate_morpheme(pred_morph, morph, multi, tok)[1]
+
+def eval_all_morph_ftam_dev():
+    PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/ncrf_results/morph/from_hpc_seed46_ftam/results.txt'
+    morph, pred_morph = ner.read_file_to_sentences_df(DEV.MORPH), ner.read_file_to_sentences_df(PRED_MORPH)
+    tok, multi = ner.read_file_to_sentences_df(DEV.TOK), ner.read_file_to_sentences_df(DEV.MULTI)
+    print('GOLD MORPH')
     gold_morph = ner.evaluate_morpheme(pred_morph, morph, multi, tok)
     
     
@@ -48,8 +55,7 @@ def eval_morph_ftam_dev():
 
     gold_multi = ner.evaluate_token_ner_nested(merged, tok_grouped) 
     
-    
-    return (gold_morph[1], pure_yap, pred_multi, gold_multi)    # return only morph to single
+    return (gold_morph[0], gold_morph[1], pure_yap, pred_multi, gold_multi) 
 
 if __name__ == '__main__':
     eval_morph_ftam_dev()
