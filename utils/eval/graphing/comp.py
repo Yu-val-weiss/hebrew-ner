@@ -9,7 +9,7 @@ rc('text', usetex=True)
 style.use('seaborn-v0_8-colorblind')
 
 
-def base_comp_graph(categories, orig_values, orig_label, compared_values, compared_label, x_label='', y_label='', title='', bar_width=0.2, dpi=800, show=True, save=None):
+def base_comp_graph(categories, orig_values, orig_label, compared_values, compared_label, x_label='', y_label='', title='', bar_width=0.2, dpi=800, save=None):
     bar_width = bar_width * len(categories)
     
     orig_positions = np.arange(len(categories))
@@ -37,12 +37,9 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
     
     if save is not None: 
         plt.savefig(save, dpi=dpi)
-    
-    if show:
-        plt.show()
         
 
-def basic_on_dev(show=True):
+def basic_on_dev():
     gold_morph = eval_morph_ftam.eval_morph_ftam_dev()
     tok = eval_single.eval_single_dev()
     multi = eval_multi.eval_multi_dev()
@@ -57,10 +54,9 @@ def basic_on_dev(show=True):
                     title='Comparison between reported results and my recreated results - dev\n' +r'\small{token-level evaluation}',
                     # save=None,
                     save='graphs/standard/token_eval_dev.png',
-                    show=show,
                     bar_width=0.08)
     
-def basic_on_test(show=True):
+def basic_on_test():
     gold_morph = eval_morph_ftam.eval_morph_ftam_test()
     tok = eval_single.eval_single_test()
     multi = eval_multi.eval_multi_test()
@@ -75,11 +71,10 @@ def basic_on_test(show=True):
                     title='Comparison between reported results and my recreated results - test\n' +r'\small{token-level evaluation}',
                     # save=None,
                     save='graphs/standard/token_eval_test.png',
-                    show=show,
                     bar_width=0.08)
     
 
-def morph_on_dev(show=True):
+def morph_on_dev():
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_dev()
 
     categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
@@ -92,10 +87,9 @@ def morph_on_dev(show=True):
                     title='Comparison between reported results and my recreated results - dev\n' +r'\small{morpheme-level evaluation}',
                     # save=None,
                     save='graphs/standard/morph_eval_dev.png',
-                    show=show,
                     bar_width=0.08)
     
-def morph_on_test(show=True):
+def morph_on_test():
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_test()
 
     categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
@@ -108,11 +102,10 @@ def morph_on_test(show=True):
                     title='Comparison between reported results and my recreated results - test\n' +r'\small{morpheme-level evaluation}',
                     # save=None,
                     save='graphs/standard/morph_eval_test.png',
-                    show=show,
                     bar_width=0.08)
   
     
-def basic_trn_on_dev(show=True):
+def basic_trn_on_dev():
     gold_morph = eval_trn_morph.eval_trn_morph_dev()
     tok = eval_trn_single.eval_single_dev()
     multi = eval_trn_multi.eval_multi_dev()
@@ -127,11 +120,10 @@ def basic_trn_on_dev(show=True):
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{token-level evaluation}',
                     # save=None,
                     save='graphs/transformer/token_eval_dev.png',
-                    show=show,
                     bar_width=0.08)
     
     
-def basic_trn_on_test(show=True):
+def basic_trn_on_test():
     gold_morph = eval_trn_morph.eval_trn_morph_test()
     tok = eval_trn_single.eval_single_test()
     multi = eval_trn_multi.eval_multi_test()
@@ -146,11 +138,10 @@ def basic_trn_on_test(show=True):
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{token-level evaluation}',
                     # save=None,
                     save='graphs/transformer/token_eval_test.png',
-                    show=show,
                     bar_width=0.08)
 
 
-def morph_trn_on_dev(show=True):
+def morph_trn_on_dev():
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_dev()
 
     categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
@@ -162,15 +153,31 @@ def morph_trn_on_dev(show=True):
                     x_label='NER Type', y_label='F1 Scores (morpheme-level evaluation)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{morpheme-level evaluation}',
                     # save=None,
-                    save='graphs/standard/morph_eval_dev.png',
-                    show=show,
+                    save='graphs/transformer/morph_eval_dev.png',
+                    bar_width=0.08)
+    
+def morph_trn_on_test():
+    _, gold_morph, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_test()
+
+    categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    orig_values = np.array([80.30,74.52,79.04,79.04])
+    my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
+    my_values = my_values * 100
+
+    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
+                    x_label='NER Type', y_label='F1 Scores (morpheme-level evaluation)',
+                    title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{morpheme-level evaluation}',
+                    # save=None,
+                    save='graphs/transformer/morph_eval_test.png',
                     bar_width=0.08)
 
 if __name__ == '__main__':
-    # basic_on_dev(False)
-    # basic_on_test(False)
-    # morph_on_dev(False)
-    # morph_on_test()
-    basic_trn_on_dev(False)
-    basic_trn_on_test(False)
-    morph_trn_on_dev(False)
+    basic_on_dev()
+    basic_on_test()
+    morph_on_dev()
+    morph_on_test()
+    basic_trn_on_dev()
+    basic_trn_on_test()
+    morph_trn_on_dev()
+    morph_trn_on_test()
+    plt.show()
