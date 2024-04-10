@@ -1,12 +1,12 @@
 from utils import ner, yap
-from utils.eval.consts import TOK, MULTI
+from utils.eval.consts import DEV
 from utils.yap_graph import prune_lattices
 from app_env import ENV
 
 if __name__ == '__main__':
-    tok = ner.read_file_to_sentences_df(TOK)
+    tok = ner.read_file_to_sentences_df(DEV.TOK)
     
-    multi = ner.read_file_to_sentences_df(MULTI)
+    multi = ner.read_file_to_sentences_df(DEV.MULTI)
     
     pred_multi = ner.read_file_to_sentences_df(f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/tok_multi_cnn.txt')
         
