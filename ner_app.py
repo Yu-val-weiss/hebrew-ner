@@ -3,14 +3,14 @@ from enum import Enum
 import os
 import tempfile
 import time
-from typing import Dict, Generator, List, Set, Tuple
+from typing import Dict, Generator, List, Tuple
 import torch
 from model.seqlabel import SeqLabel
 from ncrf_main import evaluate
 import fasttext
 from utils import ner, yap
 from utils.data import Data
-from utils.yap_graph import YapGraph, prune_lattices
+from utils.yap_graph import prune_lattices
 from utils.functions import load_fasttext_model
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
