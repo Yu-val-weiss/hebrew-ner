@@ -1,60 +1,59 @@
 from matplotlib import pyplot as plt
 import matplotlib.style as style
 import numpy as np
-from utils.eval import eval_morph_ftam, eval_multi, eval_single
+from utils.eval import eval_morph_ftam, eval_multi, eval_single, eval_morph
+from matplotlib import rc
 
-if __name__ == '__main__':
-    style.use('seaborn-v0_8-colorblind')
+# activate latex text rendering
+rc('text', usetex=True)
+style.use('seaborn-v0_8-colorblind')
 
-    (gold_morph, pure_yap, pred_multi, gold_multi) = eval_morph_ftam.eval_morph_ftam()
-    tok = eval_single.eval_single()
-    multi = eval_multi.eval_multi()
-    
-    # Data
-    categories = ['Token-Single', 'Token-Multi', 'Morpheme']
-    orig_values = np.array([78.15,77.59,80.30])
-    mine_values = np.array([tok.f, multi.f,  gold_morph.f])
-    mine_values = mine_values * 100
 
-    # Bar width
-    bar_width = 0.2
-
-    # Set positions for bar groups
+def base_comp_graph(categories, orig_values, orig_label, compared_values, compared_label, x_label='', y_label='', title='', bar_width=0.2, dpi=800, show=True, save=None):
+    # where to place the bars
     orig_positions = np.arange(len(categories))
-    mine_positions = orig_positions + bar_width
-
-    # Create bar chart
+    compared_positions = orig_positions + bar_width
+    
     fig, ax = plt.subplots()
-
-    # Bar for original values
-    orig_bars = ax.bar(orig_positions, orig_values, bar_width, label='NEMO$^2$')
-
-    # Bar for mine values
-    my_bars = ax.bar(mine_positions, mine_values, bar_width, label='Recreated')
-
-    # Set labels, title, and legend
-    ax.set_xlabel('NER Type')
-    ax.set_ylabel('F1 Scores (evaluated on whole tokens)')
-    ax.set_ylim(0, 100)
-    ax.set_title('Comparison between reported results and my recreated results')
-    ax.set_xticks(orig_positions + bar_width / 2)
-    ax.set_xticklabels(categories)
+    
+    orig_bars = ax.bar(orig_positions, orig_values, bar_width, label=orig_label)
+    compared_bars = ax.bar(compared_positions, compared_values, bar_width, label=compared_label)
+    
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    
+    ax.set_ylim(0, 100) # percentage scores
+    ax.set_xticks(orig_positions + bar_width / 2, 
+                  labels=categories)
+    
+    bar_label_fmt = "$%0.2f$"
+    ax.bar_label(orig_bars, padding=0.5, fmt=bar_label_fmt)
+    ax.bar_label(compared_bars, padding=0.5, fmt=bar_label_fmt)
+    
     ax.grid(axis='y')
     ax.legend(loc='upper left', fontsize='small')
     
+    if save is not None: 
+        plt.savefig(save, dpi=dpi)
     
-    for bar, barr, orig_value, mine_value in zip(orig_bars, my_bars, orig_values, mine_values):
-        ax.text(x := (bar.get_x() + bar.get_width() / 2), bar.get_height() + 3,
-                f'{orig_value:.2f}', ha='center', va='bottom', color='black', fontsize=8)
-
-        ax.vlines(x=x, ymin=bar.get_height(), ymax=bar.get_height() + 3, colors=bar._original_facecolor)
+    if show:
+        plt.show()
         
-        ax.text(x := (barr.get_x() + barr.get_width() / 2), barr.get_height() + 3,
-                f'{mine_value:.2f}', ha='center', va='bottom', color='black', fontsize=8)
 
-        ax.vlines(x=x, ymin=barr.get_height(), ymax=barr.get_height() + 3, colors=barr._original_facecolor)
+if __name__ == '__main__':
+    (gold_morph, pure_yap, pred_multi, gold_multi) = eval_morph_ftam.eval_morph_ftam()
+    tok = eval_single.eval_single_tok()
+    multi = eval_multi.eval_multi()
 
-    plt.savefig('graphs/recreation_chart.png', dpi=800)
-    # Show the plot
-    plt.show()
-   
+    categories = ['Token-Single', 'Token-Multi', 'Morpheme']
+    orig_values = np.array([78.15,77.59,80.30])
+    my_values = np.array([tok.f, multi.f,  gold_morph.f])
+    my_values = my_values * 100
+
+    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Recreated',
+                    x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
+                    title='Comparison between reported results and my recreated results\n' +r"\small{token-level evaluation}",
+                    # save=None,
+                    save='graphs/standard/token_eval.png',
+                    bar_width=0.3)
