@@ -42,7 +42,7 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
         
 
 if __name__ == '__main__':
-    (gold_morph, pure_yap, pred_multi, gold_multi) = eval_morph_ftam.eval_morph_ftam_dev()
+    gold_morph = eval_morph_ftam.eval_morph_ftam_dev()
     tok = eval_single.eval_single_dev()
     multi = eval_multi.eval_multi_dev()
 
