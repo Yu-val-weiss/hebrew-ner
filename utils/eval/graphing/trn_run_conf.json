@@ -3,7 +3,7 @@
         "run_labels": ["4", "5", "6", "7"],
         "values": [0.8, 0.82, 0.83, 0.64],
         "x_label": "Test x",
-        "y_label": "Test\n $\\textsc{tex test}$",
+        "y_label": "Test tex test $d_{\\textrm{ff}}$",
         "title": "Title test",
         "bar_width": 0.1,
         "show": true,
