@@ -15,7 +15,7 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
     orig_positions = np.arange(len(categories))
     compared_positions = orig_positions + bar_width
     
-    _, ax = plt.subplots()
+    fig, ax = plt.subplots()
     
     orig_bars = ax.bar(orig_positions, orig_values, bar_width, label=orig_label)
     compared_bars = ax.bar(compared_positions, compared_values, bar_width, label=compared_label)
@@ -37,6 +37,8 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
     
     if save is not None: 
         plt.savefig(save, dpi=dpi)
+        
+    return fig
         
 
 def basic_on_dev():
@@ -180,4 +182,4 @@ if __name__ == '__main__':
     basic_trn_on_test()
     morph_trn_on_dev()
     morph_trn_on_test()
-    plt.show()
+    # plt.show()
