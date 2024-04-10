@@ -56,4 +56,4 @@ if __name__ == '__main__':
                     title='Comparison between reported results and my recreated results\n' +r"\small{token-level evaluation}",
                     # save=None,
                     save='graphs/standard/token_eval.png',
-                    bar_width=0.3)
+                    bar_width=0.25)
