@@ -18,6 +18,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from utils.tokenizer import text2listOfSentences, tokenize_sentences
+from app_env import ENV
 
 
 class ModelEnum(str, Enum):
@@ -103,7 +104,7 @@ async def add_process_time_header(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
     process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
+    response.headers["X-Process-Time-ms"] = str(process_time * 1000)
     return response
 
 
@@ -250,10 +251,10 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=5000, help='Port number for the server')
     parser.add_argument('--host', type=str, default='127.0.0.1', help='Host to run on')
     parser.add_argument('--reload', dest='reload', action='store_true', help='Enable hot reload')
-    parser.add_argument('--reload-excludes', nargs='*', default=["ner_app_tests.py"], help='Files to exclude from auto-reload')
 
     args = parser.parse_args()
 
     uvicorn.run('ner_app:app', port=args.port, host=args.host,
                 reload=args.reload, 
-                reload_excludes=None if not args.reload else args.reload_excludes)
+                reload_includes=['ner_app.py'],
+                reload_excludes=['*.py'])
