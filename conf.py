@@ -13,18 +13,18 @@ class ENV:
 
 @dataclass
 class TRAIN:
-    MORPH = f"{ENV.CORPUS_DIR}/data/spmrl/gold/morph_gold_train.bmes"
-    MULTI = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-multi_gold_train.bmes"
-    TOK = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-single_gold_train.bmes"
+    MORPH: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/morph_gold_train.bmes"
+    MULTI: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-multi_gold_train.bmes"
+    TOK: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-single_gold_train.bmes"
 
 @dataclass
 class TEST:
-    MORPH = f"{ENV.CORPUS_DIR}/data/spmrl/gold/morph_gold_test.bmes"
-    MULTI = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-multi_gold_test.bmes"
-    TOK = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-single_gold_test.bmes"
+    MORPH: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/morph_gold_test.bmes"
+    MULTI: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-multi_gold_test.bmes"
+    TOK: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-single_gold_test.bmes"
 
 @dataclass
 class DEV:
-    MORPH = f"{ENV.CORPUS_DIR}/data/spmrl/gold/morph_gold_dev.bmes"
-    MULTI = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-multi_gold_dev.bmes"
-    TOK = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-single_gold_dev.bmes"
+    MORPH: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/morph_gold_dev.bmes"
+    MULTI: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-multi_gold_dev.bmes"
+    TOK: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-single_gold_dev.bmes"
