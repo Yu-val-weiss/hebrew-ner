@@ -1,16 +1,16 @@
+import conf
 from utils import ner
-from utils.eval import consts
 
 def eval_single_dev():
     print('Single to single')
     pred_single = ner.read_file_to_sentences_df('hpc_eval_results/wiki_single_results.txt')
-    single = ner.read_file_to_sentences_df(consts.DEV.TOK)
+    single = ner.read_file_to_sentences_df(conf.DEV.TOK)
     return ner.evaluate_token_ner(pred_single['Label'].to_list(), single['Label'].to_list())
 
 def eval_single_test():
     print('Single to single')
     pred_single = ner.read_file_to_sentences_df('ncrf_results/tok-single/final/test-results.txt')
-    single = ner.read_file_to_sentences_df(consts.TEST.TOK)
+    single = ner.read_file_to_sentences_df(conf.TEST.TOK)
     return ner.evaluate_token_ner(pred_single['Label'].to_list(), single['Label'].to_list())
 
 if __name__ == '__main__':
