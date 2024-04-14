@@ -1,5 +1,6 @@
+from conf import TEST
 from utils import ner, yap
-from utils.eval.consts import DEV, TEST
+from conf import DEV
 
 def make_dev():
     tok = ner.read_file_to_sentences_df(DEV.TOK)
