@@ -18,7 +18,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from utils.tokenizer import text2listOfSentences, tokenize_sentences
-from app_env import ENV
+from conf import ENV
 
 
 class ModelEnum(str, Enum):
