@@ -447,7 +447,7 @@ def align_morph_to_tok(morph_labels: List[str], morphemes: List[str], sentence: 
     return labels
 
 
-def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_delim='^', beta=1):
+def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_delim='^', beta=1, verbose=True):
     '''
     (Tjong Kim Sang and De Meulder 2003) for evaluation.
     
@@ -463,11 +463,13 @@ def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_
     '''
     
     # we can ignore BIOSE labels, only interested in category and location
-    print("Evaluating performance...")
+    if verbose:
+        print("Evaluating performance...")
     
     corr_toks = sum(p == g for p,g in zip(pred, gold))
     
-    print(f"Correct tokens: {corr_toks}, Total tokens: {len(pred)}, Accuracy: {corr_toks / len(pred):.4f}")
+    if verbose:
+        print(f"Correct tokens: {corr_toks}, Total tokens: {len(pred)}, Accuracy: {corr_toks / len(pred):.4f}")
     if not multi_tok:
         pred_span, gold_span = make_spans(pred), make_spans(gold)
     else:
@@ -484,16 +486,18 @@ def evaluate_token_ner(pred: List[str], gold: List[str], multi_tok=False, multi_
     recall = correct / len(gold_span)
     f_beta = ((beta**2 + 1) * precision * recall) / (beta**2 * precision + recall)
     
-    print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F{beta}: {f_beta:.4f}")
+    if verbose:
+        print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F{beta}: {f_beta:.4f}")
     
     return EvaluationMetrics(
         precision, recall, f_beta
     )
     
     
-def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], multi_tok=False, multi_delim='^', beta=1):
+def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], multi_tok=False, multi_delim='^', beta=1, verbose=True):
     assert len(pred) == len(gold)
-    print("Evaluating performance...")
+    if verbose:
+        print("Evaluating performance...")
     
     corr_toks = 0
     tot = 0
@@ -501,7 +505,8 @@ def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], mult
         tot += len(pp)
         corr_toks += sum(p == g for p,g in zip(pp, gg))
     
-    print(f"Correct tokens: {corr_toks}, Total tokens: {tot}, Accuracy: {corr_toks / tot:.4f}")
+    if verbose:
+        print(f"Correct tokens: {corr_toks}, Total tokens: {tot}, Accuracy: {corr_toks / tot:.4f}")
     
     correct = 0
     pred_len = 0
@@ -523,24 +528,27 @@ def evaluate_token_ner_nested(pred: List[List[str]], gold: List[List[str]], mult
     recall = correct / gold_len
     f_beta = ((beta**2 + 1) * precision * recall) / (beta**2 * precision + recall)
     
-    print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F{beta}: {f_beta:.4f}")
+    if verbose:
+        print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F{beta}: {f_beta:.4f}")
     
     return EvaluationMetrics(
         precision, recall, f_beta
     )
     
     
-def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.DataFrame, tok: pd.DataFrame, multi_label_delim = '^'):
+def evaluate_morpheme(pred_morph: pd.DataFrame, morph: pd.DataFrame, multi: pd.DataFrame, tok: pd.DataFrame, multi_label_delim = '^', verbose=True):
     '''
     Evaluates morph to morph and morph to single
     '''
-    print("Morph to morph")
-    m_to_m = evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list())
+    if verbose:
+        print("Morph to morph")
+    m_to_m = evaluate_token_ner(pred_morph['Label'].to_list(), morph['Label'].to_list(), verbose=verbose)
     
     merged = merge_morph_from_multi_spliting(pred_morph, multi, validate_to_single=True, multi_label_delim=multi_label_delim)
     
-    print("\nMorph to single")
-    m_to_tok = evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list())
+    if verbose:
+        print("\nMorph to single")
+    m_to_tok = evaluate_token_ner(merged['Label'].to_list(), tok['Label'].to_list(), verbose=verbose)
     
     return m_to_m, m_to_tok
 
