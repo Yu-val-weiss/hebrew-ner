@@ -1,7 +1,7 @@
 from utils import ner, yap
-from conf import DEV
+from config import DEV
 from utils.yap_graph import prune_lattices
-from conf import ENV
+from config import ENV
 
 if __name__ == '__main__':
     tok = ner.read_file_to_sentences_df(DEV.TOK)

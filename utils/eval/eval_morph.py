@@ -1,7 +1,7 @@
 import pandas as pd
-from conf import DEV
+from config import DEV
 from utils import ner
-from conf import ENV
+from config import ENV
 
 def eval_morph():
     PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/hpc_eval_results/morph_cnn_seed_50.txt'

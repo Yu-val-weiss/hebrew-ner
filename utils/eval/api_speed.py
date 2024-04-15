@@ -1,7 +1,7 @@
 import requests
 from random import choice
 import utils.ner as ner
-import conf
+import config
 import statistics
 from tqdm import tqdm
 
@@ -9,7 +9,7 @@ from tqdm import tqdm
 # stdev: 223.86241969210678ms   
 
 if __name__ == '__main__':
-    tok = ner.read_file_to_sentences_df(conf.DEV.TOK)
+    tok = ner.read_file_to_sentences_df(config.DEV.TOK)
     
     g = tok.groupby('SentNum')['Word'].agg(list)
     
