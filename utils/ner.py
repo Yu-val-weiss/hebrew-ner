@@ -7,9 +7,9 @@ from typing import Callable, Iterable, List, NamedTuple, Tuple
 
 from utils import yap
 import pandas as pd
-from conf import DEV
+from config import DEV
 
-from conf import ENV
+from config import ENV
 
 NER_DF_COLUMNS = ['SentNum', 'WordIndex', 'Word', 'Label'] 
 

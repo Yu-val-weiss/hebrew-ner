@@ -1,6 +1,6 @@
 from utils import yap, ner
-from conf import DEV
-from conf import ENV
+from config import DEV
+from config import ENV
 
 if __name__ == '__main__':
     gold = ner.read_file_to_sentences_df(DEV.MORPH).groupby('SentNum')['Word'].agg(list)

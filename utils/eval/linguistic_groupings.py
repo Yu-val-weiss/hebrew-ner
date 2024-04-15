@@ -1,4 +1,4 @@
-from conf import ENV
+from config import ENV
 from utils.ner import read_file_to_sentences_df, make_groupings_linguistically
 
 MORPH = f"{ENV.CORPUS_DIR}/data/spmrl/gold/morph_gold_test.bmes"

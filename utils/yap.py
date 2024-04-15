@@ -4,7 +4,7 @@ from typing import List, Set
 import requests
 import pandas as pd
 from types import SimpleNamespace
-from conf import ENV
+from config import ENV
 
 YAP_PATH = f"http://{ENV.YAP_HOST}:{ENV.YAP_PORT}/yap/heb"
 

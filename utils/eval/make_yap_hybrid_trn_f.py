@@ -1,7 +1,7 @@
 from utils import ner, yap
-from conf import DEV
+from config import DEV
 from utils.yap_graph import prune_lattices
-from conf import ENV, TEST
+from config import ENV, TEST
 
 
 def make_dev():

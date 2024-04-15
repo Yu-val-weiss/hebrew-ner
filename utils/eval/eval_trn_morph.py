@@ -1,8 +1,8 @@
 import pandas as pd
-from conf import DEV
+from config import DEV
 from utils import ner
 
-from conf import ENV, TEST
+from config import ENV, TEST
 
 def eval_trn_morph_dev():
     PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/ncrf_results/transformer/morph/results.txt'

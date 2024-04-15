@@ -1,11 +1,11 @@
-import conf
+import config
 from utils import ner
 from utils.metric import get_ner_BMES
 
 def eval_single_dev():
     print('Single to single')
     pred_single = ner.read_file_to_sentences_df('ncrf_results/transformer/token_single/results.txt')
-    single = ner.read_file_to_sentences_df(conf.DEV.TOK)
+    single = ner.read_file_to_sentences_df(config.DEV.TOK)
     # for t, m in (zip(get_ner_BMES(pred_single['Label'].to_list()), map(lambda x: x.split('@')[1] + x.split('@')[0], ner.make_spans(pred_single['Label'].to_list())))):
     #     if t != m:
     #         print(t, m)
@@ -14,7 +14,7 @@ def eval_single_dev():
 def eval_single_test():
     print('Single to single')
     pred_single = ner.read_file_to_sentences_df('ncrf_results/transformer/token_single/test-results.txt')
-    single = ner.read_file_to_sentences_df(conf.TEST.TOK)
+    single = ner.read_file_to_sentences_df(config.TEST.TOK)
     # for t, m in (zip(get_ner_BMES(pred_single['Label'].to_list()), map(lambda x: x.split('@')[1] + x.split('@')[0], ner.make_spans(pred_single['Label'].to_list())))):
     #     if t != m:
     #         print(t, m)
