@@ -90,8 +90,8 @@ def morph_on_dev():
     my_values = my_values * 100
 
     base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Recreated',
-                    x_label='Morpheme Model Type', y_label='F1 Scores (morpheme-level evaluation)',
-                    title='Comparison between reported results and my recreated results - dev\n' +r'\small{morpheme-level evaluation}',
+                    x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
+                    title='Comparison between reported results and my recreated results - dev\n' +r'\small{normalised morpheme-level evaluation}',
                     # save=None,
                     save='graphs/standard/morph_eval_dev.png',
                     bar_width=0.08)
@@ -105,8 +105,8 @@ def morph_on_test():
     my_values = my_values * 100
 
     base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Recreated',
-                    x_label='Morpheme Model Type', y_label='F1 Scores (morpheme-level evaluation)',
-                    title='Comparison between reported results and my recreated results - test\n' +r'\small{morpheme-level evaluation}',
+                    x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
+                    title='Comparison between reported results and my recreated results - test\n' +r'\small{normalised morpheme-level evaluation}',
                     # save=None,
                     save='graphs/standard/morph_eval_test.png',
                     bar_width=0.08)
@@ -157,8 +157,8 @@ def morph_trn_on_dev():
     my_values = my_values * 100
 
     base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
-                    x_label='Morpheme Model Type', y_label='F1 Scores (morpheme-level evaluation)',
-                    title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{morpheme-level evaluation}',
+                    x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
+                    title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{normalised morpheme-level evaluation}',
                     # save=None,
                     save='graphs/transformer/morph_eval_dev.png',
                     bar_width=0.08)
@@ -172,8 +172,8 @@ def morph_trn_on_test():
     my_values = my_values * 100
 
     base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values, 'Transformer Labeller',
-                    x_label='Morpheme Model Type', y_label='F1 Scores (morpheme-level evaluation)',
-                    title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{morpheme-level evaluation}',
+                    x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
+                    title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{normalised morpheme-level evaluation}',
                     # save=None,
                     save='graphs/transformer/morph_eval_test.png',
                     bar_width=0.08)
