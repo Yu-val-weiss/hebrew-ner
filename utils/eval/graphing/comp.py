@@ -9,7 +9,8 @@ rc('text', usetex=True)
 style.use('seaborn-v0_8-colorblind')
 
 
-def base_comp_graph(categories, orig_values, orig_label, compared_values, compared_label, x_label='', y_label='', title='', bar_width=0.2, dpi=800, save=None):
+def base_comp_graph(categories, orig_values, orig_label, compared_values, compared_label, orig_yerr=None, comp_yerr=None,
+                    x_label='', y_label='', title='', bar_width=0.2, dpi=800, save=None):
     bar_width = bar_width * len(categories)
     
     orig_positions = np.arange(len(categories))
@@ -17,8 +18,12 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
     
     fig, ax = plt.subplots()
     
-    orig_bars = ax.bar(orig_positions, orig_values, bar_width, label=orig_label)
-    compared_bars = ax.bar(compared_positions, compared_values, bar_width, label=compared_label)
+    orig_bars = ax.bar(orig_positions, orig_values, bar_width, 
+                       yerr=orig_yerr,
+                       label=orig_label)
+    compared_bars = ax.bar(compared_positions, compared_values, bar_width,
+                           yerr=comp_yerr,
+                           label=compared_label)
     
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
@@ -175,11 +180,11 @@ def morph_trn_on_test():
 
 if __name__ == '__main__':
     basic_on_dev()
-    basic_on_test()
-    morph_on_dev()
-    morph_on_test()
-    basic_trn_on_dev()
-    basic_trn_on_test()
-    morph_trn_on_dev()
-    morph_trn_on_test()
+    # basic_on_test()
+    # morph_on_dev()
+    # morph_on_test()
+    # basic_trn_on_dev()
+    # basic_trn_on_test()
+    # morph_trn_on_dev()
+    # morph_trn_on_test()
     # plt.show()
