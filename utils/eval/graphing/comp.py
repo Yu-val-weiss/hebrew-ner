@@ -102,7 +102,7 @@ def basic_on_test():
 def morph_on_dev():
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_dev()
 
-    categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
     orig_values = np.array([80.30,74.52,79.04,79.04])
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
@@ -119,7 +119,7 @@ def morph_on_dev():
 def morph_on_test():
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_test()
 
-    categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
     orig_values = np.array([79.10,69.52,77.11,77.11])
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
@@ -177,7 +177,7 @@ def basic_trn_on_test():
 def morph_trn_on_dev():
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_dev()
 
-    categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
     orig_values = np.array([80.30,74.52,79.04,79.04])
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
@@ -194,7 +194,7 @@ def morph_trn_on_dev():
 def morph_trn_on_test():
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_test()
 
-    categories = ['Gold', 'Pure Yap', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
     orig_values = np.array([80.30,74.52,79.04,79.04])
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
@@ -209,14 +209,12 @@ def morph_trn_on_test():
                     bar_width=0.08)
 
 if __name__ == '__main__':
-    print(DEV_NUM_SENTS)
-    print(DEV_NUM_SPANS)
-    # basic_on_dev()
-    # basic_on_test()
-    # morph_on_dev()
-    # morph_on_test()
-    # basic_trn_on_dev()
-    # basic_trn_on_test()
-    # morph_trn_on_dev()
-    # morph_trn_on_test()
+    basic_on_dev()
+    basic_on_test()
+    morph_on_dev()
+    morph_on_test()
+    basic_trn_on_dev()
+    basic_trn_on_test()
+    morph_trn_on_dev()
+    morph_trn_on_test()
     # plt.show()
