@@ -8,18 +8,19 @@ import numpy as np
 from tqdm import tqdm
 import json
 
-def speed_test(N = 500):
+def speed_test(N=500, num_to_sample=1, save=False):
     tok = ner.read_file_to_sentences_df(config.DEV.TOK)
     
     g = tok.groupby('SentNum')['Word'].agg(list)
     
     results: Dict = {
-        'N': N
+        'N': N,
+        'NumSentences': num_to_sample,
     }
     
     times = []
     for _ in tqdm(range(N), desc='Hybrid calls'):
-        sent = ' '.join(choice(g))
+        sent = ' '.join([' '.join(choice(g)) for _ in range(num_to_sample)])
         r = requests.post(
             'http://127.0.0.1:5000/predict',
             json={
@@ -48,7 +49,7 @@ def speed_test(N = 500):
     
     times = []
     for i in tqdm(range(N), desc='Standard calls'):
-        sent = ' '.join(choice(g))
+        sent = ' '.join([' '.join(choice(g)) for _ in range(num_to_sample)])
         r = requests.post(
             'http://127.0.0.1:5000/predict',
             json={
@@ -77,9 +78,10 @@ def speed_test(N = 500):
     
     print(results)
     
-    with open('utils/eval/api_speed_result.json', 'w') as f:
-        json.dump(results, f, indent=4)
+    if save:
+        with open('utils/eval/api_speed_result.json', 'w') as f:
+            json.dump(results, f, indent=4)
 
 if __name__ == '__main__':
-    speed_test(500)
+    speed_test(500, 3, save=True)
     
