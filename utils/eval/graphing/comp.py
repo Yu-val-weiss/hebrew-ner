@@ -24,13 +24,16 @@ TEST_NUM_SPANS = len(make_spans(TEST_TOK['Label']))
 CONFIDENCE = 0.95
 
 def base_comp_graph(categories, orig_values, orig_label, compared_values, compared_label, orig_yerr=None, comp_yerr=None,
-                    x_label='', y_label='', title='', bar_width=0.2, dpi=800, save=None):
+                    x_label='', y_label='', title='', bar_width=0.2, dpi=800, save=None, figax=None):
     bar_width = bar_width * len(categories)
     
     orig_positions = np.arange(len(categories))
     compared_positions = orig_positions + bar_width
     
-    fig, ax = plt.subplots()
+    if figax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig, ax = figax
     
     orig_bars = ax.bar(orig_positions, orig_values, bar_width, 
                        yerr=orig_yerr,
@@ -55,12 +58,12 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
     ax.legend(loc='upper left', fontsize='small')
     
     if save is not None: 
-        plt.savefig(save, dpi=dpi)
+        fig.savefig(save, dpi=dpi)
         
     return fig
         
 
-def basic_on_dev():
+def basic_on_dev(save='graphs/standard/token_eval_dev.png', figax=None):
     gold_morph = eval_morph_ftam.eval_morph_ftam_dev()
     tok = eval_single.eval_single_dev()
     multi = eval_multi.eval_multi_dev()
@@ -76,10 +79,11 @@ def basic_on_dev():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.3, 0.4, 0.5],
                     # save=None,
-                    save='graphs/standard/token_eval_dev.png',
+                    save=save,
+                    figax=figax,
                     bar_width=0.08)
     
-def basic_on_test():
+def basic_on_test(save='graphs/standard/token_eval_test.png', figax=None):
     gold_morph = eval_morph_ftam.eval_morph_ftam_test()
     tok = eval_single.eval_single_test()
     multi = eval_multi.eval_multi_test()
@@ -95,11 +99,12 @@ def basic_on_test():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.3, 0.7],
                     # save=None,
-                    save='graphs/standard/token_eval_test.png',
+                    save=save,
+                    figax=figax,
                     bar_width=0.08)
     
 
-def morph_on_dev():
+def morph_on_dev(save='graphs/standard/morph_eval_dev.png', figax=None):
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_dev()
 
     categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
@@ -113,10 +118,11 @@ def morph_on_dev():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.4, 0.5, 0.5, 0.5],
                     # save=None,
-                    save='graphs/standard/morph_eval_dev.png',
+                    save=save,
+                    figax=figax,
                     bar_width=0.08)
     
-def morph_on_test():
+def morph_on_test(save='graphs/standard/morph_eval_test.png', figax=None):
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_test()
 
     categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
@@ -130,11 +136,35 @@ def morph_on_test():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.6, 0.7, 0.7],
                     # save=None,
-                    save='graphs/standard/morph_eval_test.png',
+                    save=save,
+                    figax=figax,
                     bar_width=0.08)
-  
     
-def basic_trn_on_dev():
+    
+def std_dev():
+    fig, (ax0, ax1) = plt.subplots(1,2, figsize=(16,5))
+    
+    # basic
+    basic_on_dev(save=None, figax=(fig, ax0))
+    
+    # morph
+    morph_on_dev(save=None, figax=(fig,ax1))
+    
+    fig.savefig('graphs/standard/dev_comb.png', dpi=800)
+    
+
+def std_test():
+    fig, (ax0, ax1) = plt.subplots(1,2, figsize=(16,5))
+    
+    # basic
+    basic_on_test(save=None, figax=(fig, ax0))
+    
+    # morph
+    morph_on_test(save=None, figax=(fig,ax1))
+    
+    fig.savefig('graphs/standard/test_comb.png', dpi=800)
+    
+def basic_trn_on_dev(save='graphs/transformer/token_eval_dev.png', figax=None):
     gold_morph = eval_trn_morph.eval_trn_morph_dev()
     tok = eval_trn_single.eval_single_dev()
     multi = eval_trn_multi.eval_multi_dev()
@@ -150,11 +180,12 @@ def basic_trn_on_dev():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.3, 0.4, 0.5],
                     # save=None,
-                    save='graphs/transformer/token_eval_dev.png',
+                    save=save,
+                    figax=figax,
                     bar_width=0.08)
     
     
-def basic_trn_on_test():
+def basic_trn_on_test(save='graphs/transformer/token_eval_test.png', figax=None):
     gold_morph = eval_trn_morph.eval_trn_morph_test()
     tok = eval_trn_single.eval_single_test()
     multi = eval_trn_multi.eval_multi_test()
@@ -170,11 +201,12 @@ def basic_trn_on_test():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.3, 0.7],
                     # save=None,
-                    save='graphs/transformer/token_eval_test.png',
+                    save=save,
+                    figax=figax,
                     bar_width=0.08)
 
 
-def morph_trn_on_dev():
+def morph_trn_on_dev(save='graphs/transformer/morph_eval_dev.png', figax=None):
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_dev()
 
     categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
@@ -188,10 +220,11 @@ def morph_trn_on_dev():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.4, 0.5, 0.5, 0.5],
                     # save=None,
-                    save='graphs/transformer/morph_eval_dev.png',
+                    save=save,
+                    figax=figax,
                     bar_width=0.08)
     
-def morph_trn_on_test():
+def morph_trn_on_test(save='graphs/transformer/morph_eval_test.png', figax=None):
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_test()
 
     categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
@@ -205,16 +238,45 @@ def morph_trn_on_test():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.6, 0.7, 0.7],
                     # save=None,
-                    save='graphs/transformer/morph_eval_test.png',
+                    save=save,
+                    figax=figax,
                     bar_width=0.08)
+    
+    
+def trn_dev():
+    fig, (ax0, ax1) = plt.subplots(1,2, figsize=(16,5))
+    
+    # basic
+    basic_trn_on_dev(save=None, figax=(fig, ax0))
+    
+    # morph
+    morph_trn_on_dev(save=None, figax=(fig,ax1))
+    
+    fig.savefig('graphs/transformer/dev_comb.png', dpi=800)
+    
+
+def trn_test():
+    fig, (ax0, ax1) = plt.subplots(1,2, figsize=(16,5))
+    
+    # basic
+    basic_trn_on_test(save=None, figax=(fig, ax0))
+    
+    # morph
+    morph_trn_on_test(save=None, figax=(fig,ax1))
+    
+    fig.savefig('graphs/transformer/test_comb.png', dpi=800)
 
 if __name__ == '__main__':
-    basic_on_dev()
-    basic_on_test()
-    morph_on_dev()
-    morph_on_test()
-    basic_trn_on_dev()
-    basic_trn_on_test()
-    morph_trn_on_dev()
-    morph_trn_on_test()
+    # basic_on_dev()
+    # basic_on_test()
+    # morph_on_dev()
+    # morph_on_test()
+    # basic_trn_on_dev()
+    # basic_trn_on_test()
+    # morph_trn_on_dev()
+    # morph_trn_on_test()
+    std_dev()
+    std_test()
+    trn_dev()
+    trn_test()
     # plt.show()
