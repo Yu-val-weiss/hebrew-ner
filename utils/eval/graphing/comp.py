@@ -150,7 +150,7 @@ def std_dev():
     # morph
     morph_on_dev(save=None, figax=(fig,ax1))
     
-    fig.savefig('graphs/standard/dev_comb.png', dpi=800)
+    fig.savefig('graphs/standard/dev_comb.png', dpi=800, bbox_inches='tight')
     
 
 def std_test():
@@ -162,7 +162,7 @@ def std_test():
     # morph
     morph_on_test(save=None, figax=(fig,ax1))
     
-    fig.savefig('graphs/standard/test_comb.png', dpi=800)
+    fig.savefig('graphs/standard/test_comb.png', dpi=800, bbox_inches='tight')
     
 def basic_trn_on_dev(save='graphs/transformer/token_eval_dev.png', figax=None):
     gold_morph = eval_trn_morph.eval_trn_morph_dev()
@@ -252,7 +252,7 @@ def trn_dev():
     # morph
     morph_trn_on_dev(save=None, figax=(fig,ax1))
     
-    fig.savefig('graphs/transformer/dev_comb.png', dpi=800)
+    fig.savefig('graphs/transformer/dev_comb.png', dpi=800, bbox_inches='tight')
     
 
 def trn_test():
@@ -264,7 +264,7 @@ def trn_test():
     # morph
     morph_trn_on_test(save=None, figax=(fig,ax1))
     
-    fig.savefig('graphs/transformer/test_comb.png', dpi=800)
+    fig.savefig('graphs/transformer/test_comb.png', dpi=800, bbox_inches='tight')
 
 if __name__ == '__main__':
     # basic_on_dev()
