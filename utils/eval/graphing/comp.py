@@ -46,7 +46,7 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
     ax.set_ylabel(y_label)
     ax.set_title(title)
     
-    ax.set_ylim(0, 100) # percentage scores
+    ax.set_ylim(60, 100) # percentage scores
     ax.set_xticks(orig_positions + bar_width / 2, 
                   labels=categories)
     
@@ -73,7 +73,7 @@ def basic_on_dev(save='graphs/standard/token_eval_dev.png', figax=None):
     my_values = np.array([tok.f, multi.f,  gold_morph.f])
     # my_values = my_values * 100
 
-    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values * 100, 'Recreated',
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Core Model)',
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
                     title='Comparison between reported results and my recreated results - dev\n' +r'\small{token-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
@@ -93,7 +93,7 @@ def basic_on_test(save='graphs/standard/token_eval_test.png', figax=None):
     my_values = np.array([tok.f, multi.f,  gold_morph.f])
     # my_values = my_values * 100
 
-    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values * 100, 'Recreated',
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Core Model)',
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
                     title='Comparison between reported results and my recreated results - test\n' +r'\small{token-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
@@ -112,7 +112,7 @@ def morph_on_dev(save='graphs/standard/morph_eval_dev.png', figax=None):
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
 
-    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values * 100, 'Recreated',
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Core Model)',
                     x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
                     title='Comparison between reported results and my recreated results - dev\n' +r'\small{normalised morpheme-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
@@ -130,7 +130,7 @@ def morph_on_test(save='graphs/standard/morph_eval_test.png', figax=None):
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
 
-    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values * 100, 'Recreated',
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Core Model)',
                     x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
                     title='Comparison between reported results and my recreated results - test\n' +r'\small{normalised morpheme-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
@@ -174,7 +174,7 @@ def basic_trn_on_dev(save='graphs/transformer/token_eval_dev.png', figax=None):
     my_values = np.array([tok.f, multi.f,  gold_morph.f])
     # my_values = my_values * 100
 
-    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values * 100, 'Transformer Labeller',
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{token-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
@@ -195,7 +195,7 @@ def basic_trn_on_test(save='graphs/transformer/token_eval_test.png', figax=None)
     my_values = np.array([tok.f, multi.f,  gold_morph.f])
     # my_values = my_values * 100
 
-    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values * 100, 'Transformer Labeller',
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{token-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
@@ -214,7 +214,7 @@ def morph_trn_on_dev(save='graphs/transformer/morph_eval_dev.png', figax=None):
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
 
-    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values * 100, 'Transformer Labeller',
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
                     x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{normalised morpheme-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
@@ -232,7 +232,7 @@ def morph_trn_on_test(save='graphs/transformer/morph_eval_test.png', figax=None)
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
 
-    base_comp_graph(categories, orig_values, 'NEMO$^2$', my_values * 100, 'Transformer Labeller',
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
                     x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{normalised morpheme-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
@@ -267,16 +267,16 @@ def trn_test():
     fig.savefig('graphs/transformer/test_comb.png', dpi=800, bbox_inches='tight')
 
 if __name__ == '__main__':
-    # basic_on_dev()
-    # basic_on_test()
-    # morph_on_dev()
-    # morph_on_test()
-    # basic_trn_on_dev()
-    # basic_trn_on_test()
-    # morph_trn_on_dev()
-    # morph_trn_on_test()
-    std_dev()
-    std_test()
-    trn_dev()
-    trn_test()
+    basic_on_dev()
+    basic_on_test()
+    morph_on_dev()
+    morph_on_test()
+    basic_trn_on_dev()
+    basic_trn_on_test()
+    morph_trn_on_dev()
+    morph_trn_on_test()
+    # std_dev()
+    # std_test()
+    # trn_dev()
+    # trn_test()
     # plt.show()
