@@ -290,7 +290,7 @@ def std_test_all_in_one():
     base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
                     x_label='NER Model Type', y_label=r'F1 (\%)',
                     title="Comparison between NEMO$^2$ results and my recreated results - test\n" +r'\small{token-level evaluation, normalising nonstandard as necessary}',
-                    comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
+                    comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.3, 0.6, 0.8, 0.7, 0.7],
                     # save=None,
                     save='graphs/standard/test_all_in_one.png',
@@ -346,5 +346,5 @@ if __name__ == '__main__':
     # trn_dev()
     # trn_test()
     std_test_all_in_one()
-    trn_test_all_in_one()
+    # trn_test_all_in_one()
     # plt.show()
