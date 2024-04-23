@@ -1,5 +1,7 @@
 import config
 from utils import ner
+from utils.eval.conf_interval import norm_approx_int
+from utils.eval.eval_morph_ftam import DEV_SPANS, TEST_SPANS
 
 
 def eval_multi_dev():
@@ -19,4 +21,9 @@ def eval_multi_test():
     return ner.evaluate_token_ner(pred_multi['Label'].to_list(), single['Label'].to_list(), multi_tok=True)
 
 if __name__ == '__main__':
-    eval_multi_dev()
+    res = eval_multi_test()
+    
+    print(" & ".join([
+            f'{value*100:.2f} & {norm_approx_int(value, 0.95, TEST_SPANS)*100:.2f}'
+            for metric, value in res._asdict().items()
+        ]))

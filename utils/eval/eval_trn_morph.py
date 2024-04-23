@@ -3,6 +3,8 @@ from config import DEV
 from utils import ner
 
 from config import ENV, TEST
+from utils.eval.conf_interval import norm_approx_int
+from utils.eval.eval_morph_ftam import DEV_SPANS, TEST_SPANS
 
 def eval_trn_morph_dev():
     PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/ncrf_results/transformer/morph/results.txt'
@@ -112,4 +114,12 @@ def eval_all_trn_morph_test():
     return gold_morph_to_morph, gold_morph, pure_yap, pred_multi, gold_multi
 
 if __name__ == '__main__':
-    eval_all_trn_morph_test()
+    res = eval_all_trn_morph_test()
+    print('\n\n')
+    for r, t in zip(res, ['gold morph-morph', 'gold morph-tok', 'pure yap', 'pred multi', 'gold multi']):
+        print(t)
+        print(" & ".join([
+            f'{value*100:.2f} & {norm_approx_int(value, 0.95, TEST_SPANS)*100:.2f}'
+            for metric, value in r._asdict().items()
+        ]))
+        print()

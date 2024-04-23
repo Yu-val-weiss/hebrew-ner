@@ -1,8 +1,12 @@
 import pandas as pd
 from config import DEV
 from utils import ner
+from utils.eval.conf_interval import norm_approx_int
 
 from config import ENV, TEST
+
+DEV_SPANS = len(ner.make_spans(ner.read_file_to_sentences_df(DEV.TOK)['Label'].to_list()))
+TEST_SPANS = len(ner.make_spans(ner.read_file_to_sentences_df(TEST.TOK)['Label'].to_list()))
 
 def eval_morph_ftam_dev():
     PRED_MORPH = f'{ENV.ABSOLUTE_PATH_HEBREW_NER}/ncrf_results/morph/from_hpc_seed46_ftam/results.txt'
@@ -111,4 +115,12 @@ def eval_all_morph_ftam_test():
     return (gold_morph[0], gold_morph[1], pure_yap, pred_multi, gold_multi) 
 
 if __name__ == '__main__':
-    eval_morph_ftam_dev()
+    res = eval_all_morph_ftam_test()
+    print('\n\n')
+    for r, t in zip(res, ['gold morph-morph', 'gold morph-tok', 'pure yap', 'pred multi', 'gold multi']):
+        print(t)
+        print(" & ".join([
+            f'{value*100:.2f} & {norm_approx_int(value, 0.95, TEST_SPANS)*100:.2f}'
+            for metric, value in r._asdict().items()
+        ]))
+        print()
