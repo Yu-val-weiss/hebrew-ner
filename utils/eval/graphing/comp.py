@@ -285,15 +285,17 @@ def std_test_all_in_one():
     orig_values = np.array(orig_values)
     my_values = np.array(my_values)
     
+    figax = plt.subplots(1, 1, figsize=(10,6))
+    
     base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
-                    x_label='Morpheme Model Type', y_label='F1 (%)',
-                    title="Comparison between reported results and my recreated results - test\n" +r'\small{token-level evaluation, normalising nonstandard as necessary}',
+                    x_label='NER Model Type', y_label=r'F1 (\%)',
+                    title="Comparison between NEMO$^2$ results and my recreated results - test\n" +r'\small{token-level evaluation, normalising nonstandard as necessary}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.3, 0.6, 0.8, 0.7, 0.7],
                     # save=None,
-                    save='graphs/transformer/test_all_in_one.png',
-                    figax=None,
-                    bar_width=0.08)
+                    save='graphs/standard/test_all_in_one.png',
+                    figax=figax,
+                    bar_width=0.07)
     
     
 def trn_test_all_in_one():
@@ -314,32 +316,35 @@ def trn_test_all_in_one():
     orig_values = np.array(orig_values)
     my_values = np.array(my_values)
     
+    figax = plt.subplots(1, 1, figsize=(10,6))
+    
     base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
-                    x_label='Morpheme Model Type', y_label='F1 (%)',
+                    x_label='NER Model Type', y_label=r'F1 (\%)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{token-level evaluation, normalising nonstandard as necessary}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.3, 0.6, 0.8, 0.7, 0.7],
                     # save=None,
                     save='graphs/transformer/test_all_in_one.png',
-                    figax=None,
-                    bar_width=0.08)
+                    figax=figax,
+                    bar_width=0.07)
     
     
     
     
 
 if __name__ == '__main__':
-    basic_on_dev()
-    basic_on_test()
-    morph_on_dev()
-    morph_on_test()
-    basic_trn_on_dev()
-    basic_trn_on_test()
-    morph_trn_on_dev()
-    morph_trn_on_test()
-    std_dev()
-    std_test()
-    trn_dev()
-    trn_test()
-    # trn_test_all_in_one()
+    # basic_on_dev()
+    # basic_on_test()
+    # morph_on_dev()
+    # morph_on_test()
+    # basic_trn_on_dev()
+    # basic_trn_on_test()
+    # morph_trn_on_dev()
+    # morph_trn_on_test()
+    # std_dev()
+    # std_test()
+    # trn_dev()
+    # trn_test()
+    std_test_all_in_one()
+    trn_test_all_in_one()
     # plt.show()
