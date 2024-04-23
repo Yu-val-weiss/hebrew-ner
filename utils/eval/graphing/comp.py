@@ -126,7 +126,7 @@ def morph_on_test(save='graphs/standard/morph_eval_test.png', figax=None):
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_test()
 
     categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
-    orig_values = np.array([79.10,69.52,77.11,77.11])
+    orig_values = np.array([79.28,73.53,77.64,77.64])
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
 
@@ -228,7 +228,7 @@ def morph_trn_on_test(save='graphs/transformer/morph_eval_test.png', figax=None)
     _, gold_morph, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_test()
 
     categories = ['Gold', 'Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
-    orig_values = np.array([80.30,74.52,79.04,79.04])
+    orig_values = np.array([79.28,73.53,77.64,77.64])
     my_values = np.array([gold_morph.f, pure_yap.f,  pred_multi.f, gold_multi.f])
     # my_values = my_values * 100
 
@@ -265,18 +265,51 @@ def trn_test():
     morph_trn_on_test(save=None, figax=(fig,ax1))
     
     fig.savefig('graphs/transformer/test_comb.png', dpi=800, bbox_inches='tight')
+    
+    
+def trn_test_all_in_one():
+    gold_morph = eval_trn_morph.eval_trn_morph_test()
+    tok = eval_trn_single.eval_single_test()
+    multi = eval_trn_multi.eval_multi_test()
+
+    categories = ['Token-Single', 'Token-Multi', 'Morpheme (Gold)']
+    orig_values = [77.15,77.75,79.28]
+    my_values = [tok.f, multi.f,  gold_morph.f]
+    
+    _, _, pure_yap, pred_multi, gold_multi = eval_trn_morph.eval_all_trn_morph_test()
+
+    categories += ['Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    orig_values += [73.53,77.64,77.64]
+    my_values += [pure_yap.f,  pred_multi.f, gold_multi.f]
+    
+    orig_values = np.array(orig_values)
+    my_values = np.array(my_values)
+    
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
+                    x_label='Morpheme Model Type', y_label='F1 (%)',
+                    title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{token-level evaluation, normalising nonstandard as necessary}',
+                    comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
+                    orig_yerr=[0.6, 0.6, 0.7, 0.7],
+                    # save=None,
+                    save='graphs/transformer/test_all_in_one.png',
+                    figax=None,
+                    bar_width=0.08)
+    
+    
+    
+    
 
 if __name__ == '__main__':
-    # basic_on_dev()
-    # basic_on_test()
-    # morph_on_dev()
-    # morph_on_test()
-    # basic_trn_on_dev()
-    # basic_trn_on_test()
-    # morph_trn_on_dev()
-    # morph_trn_on_test()
-    # std_dev()
+    basic_on_dev()
+    basic_on_test()
+    morph_on_dev()
+    morph_on_test()
+    basic_trn_on_dev()
+    basic_trn_on_test()
+    morph_trn_on_dev()
+    morph_trn_on_test()
+    std_dev()
     std_test()
-    # trn_dev()
+    trn_dev()
     trn_test()
     # plt.show()
