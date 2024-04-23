@@ -97,7 +97,7 @@ def basic_on_test(save='graphs/standard/token_eval_test.png', figax=None):
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
                     title='Comparison between reported results and my recreated results - test\n' +r'\small{token-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
-                    orig_yerr=[0.6, 0.3, 0.7],
+                    orig_yerr=[0.6, 0.3, 0.6],
                     # save=None,
                     save=save,
                     figax=figax,
@@ -116,7 +116,7 @@ def morph_on_dev(save='graphs/standard/morph_eval_dev.png', figax=None):
                     x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
                     title='Comparison between reported results and my recreated results - dev\n' +r'\small{normalised morpheme-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
-                    orig_yerr=[0.4, 0.5, 0.5, 0.5],
+                    orig_yerr=[0.5, 0.7, 0.5, 0.5],
                     # save=None,
                     save=save,
                     figax=figax,
@@ -134,7 +134,7 @@ def morph_on_test(save='graphs/standard/morph_eval_test.png', figax=None):
                     x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
                     title='Comparison between reported results and my recreated results - test\n' +r'\small{normalised morpheme-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
-                    orig_yerr=[0.6, 0.6, 0.7, 0.7],
+                    orig_yerr=[0.6, 0.8, 0.7, 0.7],
                     # save=None,
                     save=save,
                     figax=figax,
@@ -199,7 +199,7 @@ def basic_trn_on_test(save='graphs/transformer/token_eval_test.png', figax=None)
                     x_label='NER Type', y_label='F1 Scores (token-level evaluation)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{token-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
-                    orig_yerr=[0.6, 0.3, 0.7],
+                    orig_yerr=[0.6, 0.3, 0.6],
                     # save=None,
                     save=save,
                     figax=figax,
@@ -218,7 +218,7 @@ def morph_trn_on_dev(save='graphs/transformer/morph_eval_dev.png', figax=None):
                     x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - dev\n" +r'\small{normalised morpheme-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
-                    orig_yerr=[0.4, 0.5, 0.5, 0.5],
+                    orig_yerr=[0.5, 0.7, 0.5, 0.5],
                     # save=None,
                     save=save,
                     figax=figax,
@@ -236,7 +236,7 @@ def morph_trn_on_test(save='graphs/transformer/morph_eval_test.png', figax=None)
                     x_label='Morpheme Model Type', y_label='F1 Scores (normalised morpheme-level evaluation)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{normalised morpheme-level evaluation}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
-                    orig_yerr=[0.6, 0.6, 0.7, 0.7],
+                    orig_yerr=[0.6, 0.8, 0.7, 0.7],
                     # save=None,
                     save=save,
                     figax=figax,
@@ -267,6 +267,35 @@ def trn_test():
     fig.savefig('graphs/transformer/test_comb.png', dpi=800, bbox_inches='tight')
     
     
+def std_test_all_in_one():
+    gold_morph = eval_morph_ftam.eval_morph_ftam_test()
+    tok = eval_single.eval_single_test()
+    multi = eval_multi.eval_multi_test()
+
+    categories = ['Token-Single', 'Token-Multi', 'Morpheme (Gold)']
+    orig_values = [77.15,77.75,79.28]
+    my_values = [tok.f, multi.f,  gold_morph.f]
+    
+    _, _, pure_yap, pred_multi, gold_multi = eval_morph_ftam.eval_all_morph_ftam_test()
+
+    categories += ['Pure YAP', 'Hybrid - Pred Multi', 'Hybrid - Gold Multi']
+    orig_values += [73.53,77.64,77.64]
+    my_values += [pure_yap.f,  pred_multi.f, gold_multi.f]
+    
+    orig_values = np.array(orig_values)
+    my_values = np.array(my_values)
+    
+    base_comp_graph(categories, orig_values, 'NEMO$^2$ (Bareket and Tsarfaty, 2021)', my_values * 100, 'This Work (My Transformer Model)',
+                    x_label='Morpheme Model Type', y_label='F1 (%)',
+                    title="Comparison between reported results and my recreated results - test\n" +r'\small{token-level evaluation, normalising nonstandard as necessary}',
+                    comp_yerr=[norm_approx_int(f1, CONFIDENCE, DEV_NUM_SPANS) * 100 for f1 in my_values],
+                    orig_yerr=[0.6, 0.3, 0.6, 0.8, 0.7, 0.7],
+                    # save=None,
+                    save='graphs/transformer/test_all_in_one.png',
+                    figax=None,
+                    bar_width=0.08)
+    
+    
 def trn_test_all_in_one():
     gold_morph = eval_trn_morph.eval_trn_morph_test()
     tok = eval_trn_single.eval_single_test()
@@ -289,7 +318,7 @@ def trn_test_all_in_one():
                     x_label='Morpheme Model Type', y_label='F1 (%)',
                     title="Comparison between NEMO$^2$ results and my novel architecture's results - test\n" +r'\small{token-level evaluation, normalising nonstandard as necessary}',
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
-                    orig_yerr=[0.6, 0.6, 0.7, 0.7],
+                    orig_yerr=[0.6, 0.3, 0.6, 0.8, 0.7, 0.7],
                     # save=None,
                     save='graphs/transformer/test_all_in_one.png',
                     figax=None,
@@ -312,4 +341,5 @@ if __name__ == '__main__':
     std_test()
     trn_dev()
     trn_test()
+    # trn_test_all_in_one()
     # plt.show()
