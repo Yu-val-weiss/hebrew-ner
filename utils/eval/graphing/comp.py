@@ -46,7 +46,7 @@ def base_comp_graph(categories, orig_values, orig_label, compared_values, compar
     ax.set_ylabel(y_label)
     ax.set_title(title)
     
-    ax.set_ylim(60, 100) # percentage scores
+    ax.set_ylim(60, 90) # percentage scores
     ax.set_xticks(orig_positions + bar_width / 2, 
                   labels=categories)
     
