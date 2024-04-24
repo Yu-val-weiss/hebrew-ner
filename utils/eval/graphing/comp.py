@@ -293,9 +293,12 @@ def std_test_all_in_one():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.3, 0.6, 0.8, 0.7, 0.7],
                     # save=None,
-                    save='graphs/standard/test_all_in_one.png',
+                    save=None,
                     figax=figax,
                     bar_width=0.07)
+    
+    figax[0].savefig('graphs/standard/test_all_in_one.png', bbox_inches='tight', dpi=800)
+    
     
     
 def trn_test_all_in_one():
@@ -324,10 +327,11 @@ def trn_test_all_in_one():
                     comp_yerr=[norm_approx_int(f1, CONFIDENCE, TEST_NUM_SPANS) * 100 for f1 in my_values],
                     orig_yerr=[0.6, 0.3, 0.6, 0.8, 0.7, 0.7],
                     # save=None,
-                    save='graphs/transformer/test_all_in_one.png',
+                    save=None,
                     figax=figax,
                     bar_width=0.07)
     
+    figax[0].savefig('graphs/transformer/test_all_in_one.png', bbox_inches='tight', dpi=800)
     
     
     
@@ -346,5 +350,5 @@ if __name__ == '__main__':
     # trn_dev()
     # trn_test()
     std_test_all_in_one()
-    # trn_test_all_in_one()
+    trn_test_all_in_one()
     # plt.show()
