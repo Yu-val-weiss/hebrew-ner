@@ -135,12 +135,8 @@ def predict_text_from_md_df(data: Data, model: SeqLabel, md: pd.DataFrame) -> pd
     
     text['WordIndex'] = text.groupby('SentNum').cumcount()
     
-    with NamedTemporary() as tmpfile:
-        with open(tmpfile, 'w', encoding='utf-8') as tmpf:
-            tmpf.write('\n\n'.join(text.groupby('SentNum')['Token'].agg(lambda x: '\n'.join(map(lambda x: x + ' O', x)))))
-        data.raw_dir = tmpfile
-        data.generate_instance('raw')
-        speed, pred_results, pred_scores = evaluate(data, model, 'raw', skip_eval=True)  # type: ignore
+    text_for_pred = text.groupby('SentNum')['Token'].agg(list).to_list()
+    pred_result = predict_text(data, model, text_for_pred)
         
         
     def pred_result_gen(pred_result):
@@ -149,7 +145,7 @@ def predict_text_from_md_df(data: Data, model: SeqLabel, md: pd.DataFrame) -> pd
                 yield (sent_num, word_index, label)
         
     label_df = pd.DataFrame(
-        data = pred_result_gen(pred_results),
+        data = pred_result_gen(pred_result),
         columns = ['SentNum', 'WordIndex', 'Label']
     )
     
