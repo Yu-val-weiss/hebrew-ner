@@ -150,7 +150,8 @@ def predict_text_from_md_df(data: Data, model: SeqLabel, md: pd.DataFrame) -> pd
         columns = ['SentNum', 'WordIndex', 'Label']
     )
     
-    return pd.merge(text, label_df, on=['SentNum', 'WordIndex'])[['SentNum', 'WordIndex', 'Token', 'Label']]
+    merged = pd.merge(text, label_df, on=['SentNum', 'WordIndex'])
+    return merged[['SentNum', 'WordIndex', 'Token', 'Label']]
 
 
 def standard_predict(data: Data, model: SeqLabel, text: List[List[str]]) -> NERResponse:
