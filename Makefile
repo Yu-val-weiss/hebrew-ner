@@ -40,4 +40,4 @@ cloc:
 	cloc --git --diff 8393a17 HEAD --exclude-ext=txt,wilkes3,ini,md,json --exclude-list-file=.clocignore --force-lang="Dockerfile",yap --exclude-lang="make"
 
 submission:
-	zip -R 2367B.zip '*.py'
+	git archive -o ~/Desktop/2367B.zip --worktree-attributes main
