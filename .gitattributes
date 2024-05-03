@@ -1,3 +1,2 @@
-ncrf_hpc_configs/**/* filter=lfs diff=lfs merge=lfs -text
-
-./**/*.tbz export-ignore
+ncrf_hpc_configs/**/* filter=lfs diff=lfs merge=lfs -text export-ignore
+graphs export-ignore
