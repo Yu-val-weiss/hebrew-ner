@@ -123,7 +123,8 @@ def predict_text(data: Data, model: SeqLabel, text: List[List[str]]) -> List[Lis
 
 def predict_text_from_md_df(data: Data, model: SeqLabel, md: pd.DataFrame) -> pd.DataFrame:
     '''
-    Returns ner dataframe
+    Predicts from morphological disambiguation lattice. 
+    Returns an NER dataframe.
     '''
     text = md.copy(deep=True)
     
@@ -138,7 +139,7 @@ def predict_text_from_md_df(data: Data, model: SeqLabel, md: pd.DataFrame) -> pd
     text_for_pred = text.groupby('SentNum')['Token'].agg(list).to_list()
     pred_result = predict_text(data, model, text_for_pred)
         
-        
+
     def pred_result_gen(pred_result):
         for sent_num, sent in enumerate(pred_result):
             for word_index, label in enumerate(sent):
