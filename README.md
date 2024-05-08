@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- A working `Python 3.8` installation (may be forwards compatible, but not tested)
+- A working `Python 3.8` installation (the app might be forwards compatible, but not tested)
 - The Docker daemon running
 - `docker-compose` installed
 
@@ -60,7 +60,7 @@ unzip wiki.he.zip
 
 ### Testing the installation
 
-To test that the installation worked, start a Python interpreter by typing `Python`
+To test that the installation worked, start a Python interpreter
 
 Now run the following
 
