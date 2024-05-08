@@ -26,7 +26,6 @@ class ModelEnum(str, Enum):
     token_multi = 'token_multi'
     morph = 'morph'
     hybrid = 'hybrid'
-    morph_lstm_ftam = 'morph_lstm_ftam'
 
 
 models: Dict[str, Tuple[Data, SeqLabel]] = {}
