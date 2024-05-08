@@ -28,3 +28,4 @@ class DEV:
     MORPH: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/morph_gold_dev.bmes"
     MULTI: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-multi_gold_dev.bmes"
     TOK: str = f"{ENV.CORPUS_DIR}/data/spmrl/gold/token-single_gold_dev.bmes"
+    
