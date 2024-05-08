@@ -68,16 +68,89 @@ class NERQuery(BaseModel):
     text: str
     model: ModelEnum = ModelEnum.token_single
     
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "text": "גנו גידל דגן בגן.",
+                    "model": "token_single"
+                }
+            ]
+        }
+    }
 
 class NERLabelledToken(BaseModel):
     token: str
     label: str
     
+    
 class NERResponse(BaseModel):
     prediction: List[List[NERLabelledToken]]
     
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "prediction": [
+                        [
+                            {
+                                "token": "גנו",
+                                "label": "O"
+                            },
+                            {
+                                "token": "גידל",
+                                "label": "O"
+                            },
+                            {
+                                "token": "דגן",
+                                "label": "O"
+                            },
+                            {
+                                "token": "בגן",
+                                "label": "O"
+                            },
+                            {
+                                "token": ".",
+                                "label": "O"
+                            }
+                        ]
+                    ]
+                }
+            ]
+        }
+    }
+    
 class TokenizeQuery(BaseModel):
     text: str
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "text": "גנו גידל דגן בגן."
+                }
+            ]
+        }
+    }
+
+class TokenizeResponse(BaseModel):
+    tokenized_text: List[List[str]]
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "tokenized_text": [
+                        [
+                            "גנו",
+                            "גידל",
+                            "דגן",
+                            "בגן",
+                            "."
+                        ]
+                    ]
+                }
+            ]
+        }
+    }
 
 class NamedTemporary:
     def __enter__(self) -> str:
@@ -95,7 +168,7 @@ def home():
 @app.post("/tokenize")
 def api_tokenize(q: TokenizeQuery):
     sents = text2listOfSentences(q.text)
-    return tokenize_sentences(sents)
+    return TokenizeResponse(tokenized_text=tokenize_sentences(sents))
 
 
 @app.middleware("http")
