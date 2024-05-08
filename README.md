@@ -91,7 +91,8 @@ wget -O trained_models.zip https://figshare.com/ndownloader/articles/25773039?pr
 Once this has downloaded run
 
 ```zsh
-mkdir -p ncrf_hpc_configs/transformer && unzip trained_models.zip -d ncrf_hpc_configs/transformer
+mkdir -p ncrf_hpc_configs/transformer &&
+ unzip trained_models.zip -d ncrf_hpc_configs/transformer
 ```
 
 ## Running
@@ -129,6 +130,14 @@ If making changes to the app, can enable hot reload by running
 ```zsh
 python ner_app.py --reload
 ```
+
+Can customise the port and host by running
+
+```zsh
+python ner_app.py --host HOST --port PORT
+```
+
+Alternatively, can change the values in the Dockerfile, in the `ENTRYPOINT` line.
 
 ### Running just YAP using Docker
 
