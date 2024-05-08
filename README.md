@@ -1,143 +1,135 @@
-# Hebrew NER: Part II Project
+# Hebrew NER: Part II Project, How to Run The App
+
+## Requirements
+
+- A working `Python 3.8` installation
+- The Docker daemon running
+- `docker-compose` installed
 
 ## .env file
 
-Users should create a `.env` file with the following parameters that should be filled
+Users should create a `.env` file with the following parameters that should be filled accordingly. Defaults are shown where applicable. `ABSOLUTE_PATH_HEBREW_NER` is the absolute path to the current directory.
 
 ```config
 ABSOLUTE_PATH_HEBREW_NER=
-CORPUS_DIR=
-YAP_HOST=
-YAP_PORT=
+YAP_HOST=127.0.0.1
+YAP_PORT=8000
 ```
 
-## Forked YAP Parser
+## Set up Python `venv`
 
-### New Command
-
-`yap/heb/joint/lattice` takes in a JSON object with the following structure
-
-```JSON
-{"amb_lattice": "0\t1\tב\tב\tPREPOSITION\tPREPOSITION\t_\t1\n0\t3\tבגן\tבגן\tNNP\tNNP\tgen=M|num=S\t1\n0\t3\tבגן\tבגן\tNN\tNN\tgen=M|num=P|num=S\t1\n0\t3\tבגן\tבגן\tNN\tNN\tgen=M|num=S\t1\n0\t3\tבגן\tבגן\tNNP\tNNP\tgen=F|num=S\t1\n0\t3\tבגן\tבגן\tNNP\tNNP\tgen=F|gen=M|num=S\t1\n0\t3\tבגן\tבגן\tNNP\tNNP\t_\t1\n0\t3\tבגן\tבגן\tNN\tNN\tgen=M|num=P\t1\n0\t3\tבגן\tבגן\tNN\tNN\tgen=F|num=S\t1\n0\t3\tבגן\tבגן\tNN\tNN\tgen=F|num=P\t1\n1\t3\tגן\tגן\tNN\tNN\tgen=M|num=S\t1\n1\t3\tגן\tגן\tNNT\tNNT\tgen=M|num=S\t1\n1\t2\tה\tה\tDEF\tDEF\t_\t1\n2\t3\tגן\tגן\tNNT\tNNT\tgen=M|num=S\t1\n2\t3\tגן\tגן\tNN\tNN\tgen=M|num=S\t1\n\n"}
-```
-
-#### Notes
-
-- There **MUST** be two whitespace characters at the end
-- The MA step returns it as `{"ma_lattice" : ""}`
-- Go version must be 1.15
-
-### Rebuilding
-
-If a new version has been pushed to GitHub run the following:
+To create the virtual environment
 
 ```zsh
-docker compose build --no-cache
+python3.8 -m venv venv
 ```
+
+To activate it in the terminal
+
+```zsh
+source venv/bin/activate
+```
+
+To install the library requirements
+
+```zsh
+pip install -r requirements.txt
+```
+
+All further instructions assume that the virtual environment is active.
+
+### Deactivating the `venv`
+
+Simply execute the following
+
+```zsh
+deactivate
+```
+
+## Installing fastText
+
+It is now necessary to install the fastText binary.
+
+We will place it in a folder called fastText. 
+
+```zsh
+mkdir fasttext && cd fasttext
+wget https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.he.zip
+unzip wiki.he.zip
+```
+
+### Testing the installation
+
+To test that the installation worked, start a Python interpreter by typing `Python`
+
+Now run the following
+
+```Python
+import fasttext
+
+ft = fasttext.load_model('fasttext/wiki.he.bin')
+```
+
+Note: the following warning may appear.
+
+```zsh
+Warning : `load_model` does not return WordVectorModel or SupervisedModel any more, but a `FastText` object which is very similar.
+```
+
+This can be safely ignored.
+
+## Installing the models
+
+Now my extension models must be downloaded.
+
+Run the following to download them (from Figshare)
+
+```zsh
+wget -O trained_models.zip https://figshare.com/ndownloader/articles/25773039?private_link=ab195c4231927a669e0e
+```
+
+Once this has downloaded run
+
+```zsh
+unzip trained_models.zip
+```
+
+
+
+## Running
+
+Use the following to run the app alongisde YAP using Docker compose
 
 ```zsh
 docker compose up
 ```
 
-### To use Colab
+### Force rebuild
 
-First do:
-
-```sh
-ngrok start yap 
-```
-
-Note: password is on google colab and in `/Users/yuval/.config/ngrok/ngrok.yml`
-
-```Python
-import requests
-from requests.auth import HTTPBasicAuth
-
-url = NGROKURL
-json_data = {"amb_lattice": "...."}
-username = "user"
-password = "pass"
-
-response = requests.get(url, json=json_data, auth=HTTPBasicAuth(username, password))
-
-if response.status_code == 200:
-    # Request was successful, and the response is stored in 'response.text'
-    print("Response:")
-    print(response.json())
-else:
-    print(f"Request failed with status code: {response.status_code}")
-```
-
-## FastText Embeddings
-
-Bin allows for outoftext words to be predicted
-
-### Download bin using Python
-
-```Py
-import fasttext.util
-fasttext.util.download_model('he', if_exists='ignore')
-```
+Use the following to force-rebuild
 
 ```zsh
-mkdir -p fasttext && sudo mv cc.* fasttext/
+docker compose build --no-cache
 ```
 
-### Load from bin
-
-```Python
-import fasttext
-import fasttext.util
-
-ft = fasttext.load_model('fasttext/cc.he.300.bin')
-ft.get_dimension() # 300
-fasttext.util.reduce_model(ft, 100)
-ft.get_dimension() # 100
-embed = ft.get_word_vector('שלום')
-```
-
-### Load from text
-
-```Py
-def load_vectors(fname):
-    fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
-    n, d = map(int, fin.readline().split())
-    data = {}
-    for line in fin:
-        tokens = line.rstrip().split(' ')
-        data[tokens[0]] = map(float, tokens[1:])
-    return data
-```
-
-## Moving data to HPC
+then run
 
 ```zsh
-make xxx-archive
-make upload-xxx # where xxx can be code fasttext archive
+docker compose up
 ```
 
-Can clean with
+### Running the app natively
+
+Use the command
 
 ```zsh
-make clean
+python ner_app.py
 ```
 
-### Now on HPC
+### Running just YAP using Docker
 
-```bash
-tar -xvf archive.tar.gz
-```
+Use the command
 
-## Seeds
-
-### List of seeds
-
-*Token single*: 46
-*Token multi*: 52
-*Morph*: 50
-
-### Updating seed
-
-```bash
-perl -pi -e 's/seed_num = [0-9]*/seed_num = 46/' /home/CRSID/hebrew-ner/ncrf_main.py
+```zsh
+docker-compose start yap
 ```
