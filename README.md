@@ -97,7 +97,7 @@ mkdir -p ncrf_hpc_configs/transformer &&
 
 ## Running
 
-Use the following to run the app alongisde YAP using Docker compose
+Use the following to run the app alongside YAP using Docker compose
 
 ```zsh
 docker compose up
