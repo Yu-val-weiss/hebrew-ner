@@ -50,7 +50,7 @@ deactivate
 
 It is now necessary to install the fastText binary.
 
-We will place it in a folder called fastText. 
+We will place it in a folder called fastText.
 
 ```zsh
 mkdir fasttext && cd fasttext
@@ -179,7 +179,7 @@ curl --request POST \
 
 ## Available endpoints
 
-The app has two available endpoints `/tokenize` and `/predict`, both of which are `POST` requests. 
+The app has two available endpoints `/tokenize` and `/predict`, both of which are `POST` requests.
 
 ### `/tokenize`
 
