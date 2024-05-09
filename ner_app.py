@@ -72,7 +72,7 @@ class NERQuery(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "text": "גנו גידל דגן בגן.",
+                    "text": "גנן גידל דגן בגן.",
                     "model": "token_single"
                 }
             ]
@@ -94,7 +94,7 @@ class NERResponse(BaseModel):
                     "prediction": [
                         [
                             {
-                                "token": "גנו",
+                                "token": "גנן",
                                 "label": "O"
                             },
                             {
@@ -126,7 +126,7 @@ class TokenizeQuery(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "text": "גנו גידל דגן בגן."
+                    "text": "גנן גידל דגן בגן."
                 }
             ]
         }
@@ -140,7 +140,7 @@ class TokenizeResponse(BaseModel):
                 {
                     "tokenized_text": [
                         [
-                            "גנו",
+                            "גנן",
                             "גידל",
                             "דגן",
                             "בגן",
