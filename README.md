@@ -182,7 +182,7 @@ curl --request POST \
   --url http://127.0.0.1:5000/predict \
   --header 'Content-Type: application/json' \
   --data '{
-        "text": "גנו גידל דגן בגן.",
+        "text": "גנן גידל דגן בגן.",
         "model": "token_single"
 }'
 ```
