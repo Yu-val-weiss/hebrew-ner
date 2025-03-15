@@ -171,3 +171,4 @@ trained_models/
 ncrf_configs/*
 ncrf_hpc_configs/**/*.model
 ncrf_hpc_configs/**/*.dset
+/ncrf_hpc_configs
